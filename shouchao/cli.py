@@ -50,7 +50,7 @@ def main():
 def _build_main_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="shouchao",
-        description="ShouChao (守巢) - Global News Intelligence Platform",
+        description="ShouChao (手抄) - Web Information Retrieval Assistant",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""\
 Subcommands:
@@ -465,8 +465,8 @@ def cmd_web():
 
     banner = f"""
     ╔═══════════════════════════════════════════╗
-    ║   ShouChao (守巢) v{__version__:<24s} ║
-    ║   Global News Intelligence Platform       ║
+    ║   ShouChao (手抄) v{__version__:<24s} ║
+    ║   Web Information Retrieval Assistant     ║
     ╠═══════════════════════════════════════════╣
     ║   Web: http://{args.host}:{args.port:<21d} ║
     ╚═══════════════════════════════════════════╝

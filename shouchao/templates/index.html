@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ShouChao (守巢) v{{ version }}</title>
+    <title>ShouChao (手抄) v{{ version }}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
     <div class="app-container">
         <nav class="sidebar">
             <div class="logo">
-                <h2>守巢</h2>
+                <h2>手抄</h2>
                 <span class="version">v{{ version }}</span>
             </div>
             <ul class="nav-links">
@@ -146,13 +146,22 @@
                         </div>
                         <div class="form-group">
                             <label>Chat Model</label>
-                            <input type="text" id="settChatModel" value="{{ config.chat_model }}">
+                            <select id="settChatModel">
+                                {% if config.chat_model %}
+                                <option value="{{ config.chat_model }}" selected>{{ config.chat_model }}</option>
+                                {% endif %}
+                            </select>
                         </div>
                         <div class="form-group">
                             <label>Embedding Model</label>
-                            <input type="text" id="settEmbedModel" value="{{ config.embedding_model }}">
+                            <select id="settEmbedModel">
+                                {% if config.embedding_model %}
+                                <option value="{{ config.embedding_model }}" selected>{{ config.embedding_model }}</option>
+                                {% endif %}
+                            </select>
                         </div>
                         <button class="btn btn-secondary btn-sm" onclick="testConnection()">Test Connection</button>
+                        <button class="btn btn-secondary btn-sm" onclick="loadModels()" style="margin-left:5px">Refresh Models</button>
                     </div>
                     <div class="card">
                         <h3 data-i18n="proxy">Proxy</h3>

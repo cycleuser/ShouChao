@@ -1,4 +1,4 @@
-# ShouChao (守巢) - Global News Intelligence Platform
+# ShouChao (手抄) - Web Information Retrieval Assistant
 
 Aggregates news from 100+ major media sources across 10 languages, converts articles to structured markdown, indexes them into a ChromaDB knowledge base, and provides AI-powered briefings and analysis for investment, immigration, and study abroad scenarios.
 

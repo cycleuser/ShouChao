@@ -21,16 +21,16 @@ LANGUAGES = {
 
 TRANSLATIONS = {
     "app_title": {
-        "zh": "守巢 - 全球新闻情报平台",
-        "en": "ShouChao - Global News Intelligence",
-        "ja": "ShouChao - グローバルニュースインテリジェンス",
-        "fr": "ShouChao - Intelligence Mondiale des Nouvelles",
-        "ru": "ShouChao - Глобальная Новостная Разведка",
-        "de": "ShouChao - Globale Nachrichtenintelligenz",
-        "it": "ShouChao - Intelligence Globale delle Notizie",
-        "es": "ShouChao - Inteligencia Global de Noticias",
-        "pt": "ShouChao - Inteligência Global de Notícias",
-        "ko": "ShouChao - 글로벌 뉴스 인텔리전스",
+        "zh": "手抄 - 网络信息检索辅助工具",
+        "en": "ShouChao - Web Information Retrieval Assistant",
+        "ja": "ShouChao - ウェブ情報検索アシスタント",
+        "fr": "ShouChao - Assistant de recherche d'informations web",
+        "ru": "ShouChao - Помощник по поиску информации в сети",
+        "de": "ShouChao - Web-Informationsrecherche-Assistent",
+        "it": "ShouChao - Assistente per la ricerca di informazioni web",
+        "es": "ShouChao - Asistente de recuperación de información web",
+        "pt": "ShouChao - Assistente de recuperação de informações web",
+        "ko": "ShouChao - 웹 정보 검색 보조 도구",
     },
     "fetch_news": {
         "zh": "抓取新闻", "en": "Fetch News", "ja": "ニュース取得",

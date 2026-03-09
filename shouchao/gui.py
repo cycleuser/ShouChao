@@ -26,7 +26,7 @@ def launch_gui():
     ensure_dirs()
 
     root = tk.Tk()
-    root.title(f"ShouChao (守巢) v{__version__}")
+    root.title(f"ShouChao (手抄) v{__version__}")
     root.geometry("1100x750")
     root.minsize(800, 600)
 
@@ -435,34 +435,107 @@ def launch_gui():
     def _open_settings():
         win = tk.Toplevel(root)
         win.title(t("settings"))
-        win.geometry("450x400")
+        win.geometry("500x450")
         win.transient(root)
 
         frame = ttk.Frame(win, padding=10)
         frame.pack(fill="both", expand=True)
 
-        row = 0
         entries = {}
-        for field, label in [
-            ("ollama_url", t("ollama_url")),
-            ("chat_model", t("model") + " (Chat)"),
-            ("embedding_model", t("model") + " (Embed)"),
-            ("language", t("language_label")),
-            ("fetch_delay", "Fetch Delay (s)"),
-            ("default_fetcher", "Default Fetcher"),
-            ("proxy_mode", t("proxy") + " Mode"),
-            ("proxy_http", t("proxy") + " HTTP"),
-            ("proxy_https", t("proxy") + " HTTPS"),
-        ]:
-            ttk.Label(frame, text=label + ":").grid(row=row, column=0,
-                                                      sticky="w", pady=3)
-            var = tk.StringVar(value=str(getattr(CONFIG, field, "")))
-            entry = ttk.Entry(frame, textvariable=var, width=35)
-            entry.grid(row=row, column=1, sticky="ew", padx=5, pady=3)
-            entries[field] = var
-            row += 1
+        row = 0
+
+        # --- Ollama URL (text entry) ---
+        ttk.Label(frame, text=t("ollama_url") + ":").grid(row=row, column=0, sticky="w", pady=3)
+        var_ollama_url = tk.StringVar(value=str(CONFIG.ollama_url))
+        ttk.Entry(frame, textvariable=var_ollama_url, width=35).grid(row=row, column=1, columnspan=2, sticky="ew", padx=5, pady=3)
+        entries["ollama_url"] = var_ollama_url
+        row += 1
+
+        # --- Chat Model (combobox, dynamically populated) ---
+        ttk.Label(frame, text=t("model") + " (Chat):").grid(row=row, column=0, sticky="w", pady=3)
+        var_chat_model = tk.StringVar(value=str(CONFIG.chat_model))
+        chat_combo = ttk.Combobox(frame, textvariable=var_chat_model, width=33)
+        chat_combo.grid(row=row, column=1, columnspan=2, sticky="ew", padx=5, pady=3)
+        entries["chat_model"] = var_chat_model
+        row += 1
+
+        # --- Embedding Model (combobox, dynamically populated) ---
+        ttk.Label(frame, text=t("model") + " (Embed):").grid(row=row, column=0, sticky="w", pady=3)
+        var_embed_model = tk.StringVar(value=str(CONFIG.embedding_model))
+        embed_combo = ttk.Combobox(frame, textvariable=var_embed_model, width=33)
+        embed_combo.grid(row=row, column=1, columnspan=2, sticky="ew", padx=5, pady=3)
+        entries["embedding_model"] = var_embed_model
+        row += 1
+
+        # --- Refresh Models button ---
+        def _refresh_models():
+            def _fetch():
+                try:
+                    from shouchao.core.ollama_client import OllamaClient
+                    client = OllamaClient(var_ollama_url.get())
+                    chat_models = client.get_chat_models()
+                    embed_models = client.get_embedding_models()
+                    root.after(0, lambda: chat_combo.config(values=chat_models))
+                    root.after(0, lambda: embed_combo.config(values=embed_models))
+                    root.after(0, lambda: set_status(f"Found {len(chat_models)} chat, {len(embed_models)} embedding models"))
+                except Exception as e:
+                    root.after(0, lambda: set_status(f"Failed to fetch models: {e}"))
+            threading.Thread(target=_fetch, daemon=True).start()
+
+        ttk.Button(frame, text="Refresh Models", command=_refresh_models).grid(row=row, column=1, sticky="w", padx=5, pady=3)
+        row += 1
+
+        # --- Language (readonly combobox) ---
+        ttk.Label(frame, text=t("language_label") + ":").grid(row=row, column=0, sticky="w", pady=3)
+        var_language = tk.StringVar(value=str(CONFIG.language))
+        ttk.Combobox(frame, textvariable=var_language, values=list(LANGUAGES.keys()),
+                      width=33, state="readonly").grid(row=row, column=1, columnspan=2, sticky="ew", padx=5, pady=3)
+        entries["language"] = var_language
+        row += 1
+
+        # --- Fetch Delay (text entry) ---
+        ttk.Label(frame, text="Fetch Delay (s):").grid(row=row, column=0, sticky="w", pady=3)
+        var_fetch_delay = tk.StringVar(value=str(CONFIG.fetch_delay))
+        ttk.Entry(frame, textvariable=var_fetch_delay, width=35).grid(row=row, column=1, columnspan=2, sticky="ew", padx=5, pady=3)
+        entries["fetch_delay"] = var_fetch_delay
+        row += 1
+
+        # --- Default Fetcher (readonly combobox) ---
+        ttk.Label(frame, text="Default Fetcher:").grid(row=row, column=0, sticky="w", pady=3)
+        var_fetcher = tk.StringVar(value=str(CONFIG.default_fetcher))
+        ttk.Combobox(frame, textvariable=var_fetcher,
+                      values=["requests", "curl", "browser", "playwright"],
+                      width=33, state="readonly").grid(row=row, column=1, columnspan=2, sticky="ew", padx=5, pady=3)
+        entries["default_fetcher"] = var_fetcher
+        row += 1
+
+        # --- Proxy Mode (readonly combobox) ---
+        ttk.Label(frame, text=t("proxy") + " Mode:").grid(row=row, column=0, sticky="w", pady=3)
+        var_proxy_mode = tk.StringVar(value=str(CONFIG.proxy_mode))
+        ttk.Combobox(frame, textvariable=var_proxy_mode,
+                      values=["none", "system", "manual"],
+                      width=33, state="readonly").grid(row=row, column=1, columnspan=2, sticky="ew", padx=5, pady=3)
+        entries["proxy_mode"] = var_proxy_mode
+        row += 1
+
+        # --- Proxy HTTP (text entry) ---
+        ttk.Label(frame, text=t("proxy") + " HTTP:").grid(row=row, column=0, sticky="w", pady=3)
+        var_proxy_http = tk.StringVar(value=str(CONFIG.proxy_http))
+        ttk.Entry(frame, textvariable=var_proxy_http, width=35).grid(row=row, column=1, columnspan=2, sticky="ew", padx=5, pady=3)
+        entries["proxy_http"] = var_proxy_http
+        row += 1
+
+        # --- Proxy HTTPS (text entry) ---
+        ttk.Label(frame, text=t("proxy") + " HTTPS:").grid(row=row, column=0, sticky="w", pady=3)
+        var_proxy_https = tk.StringVar(value=str(CONFIG.proxy_https))
+        ttk.Entry(frame, textvariable=var_proxy_https, width=35).grid(row=row, column=1, columnspan=2, sticky="ew", padx=5, pady=3)
+        entries["proxy_https"] = var_proxy_https
+        row += 1
 
         frame.columnconfigure(1, weight=1)
+
+        # Auto-fetch models on dialog open
+        _refresh_models()
 
         def _save():
             for field, var in entries.items():

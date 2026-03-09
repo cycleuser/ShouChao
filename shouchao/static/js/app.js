@@ -27,8 +27,40 @@ function testConnection() {
         .then(r => r.json())
         .then(data => {
             alert(data.available ? 'Ollama is connected!' : 'Ollama is not available');
+            if (data.available) loadModels();
         })
         .catch(e => alert('Connection test failed: ' + e));
+}
+
+function loadModels() {
+    fetch('/api/models')
+        .then(r => r.json())
+        .then(data => {
+            if (!data.available) return;
+            const chatSelect = document.getElementById('settChatModel');
+            const embedSelect = document.getElementById('settEmbedModel');
+            const chatCurrent = chatSelect.value;
+            const embedCurrent = embedSelect.value;
+
+            chatSelect.innerHTML = '<option value="">-- Select Chat Model --</option>';
+            (data.chat_models || []).forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m;
+                opt.textContent = m;
+                if (m === chatCurrent) opt.selected = true;
+                chatSelect.appendChild(opt);
+            });
+
+            embedSelect.innerHTML = '<option value="">-- Select Embedding Model --</option>';
+            (data.embedding_models || []).forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m;
+                opt.textContent = m;
+                if (m === embedCurrent) opt.selected = true;
+                embedSelect.appendChild(opt);
+            });
+        })
+        .catch(() => {});
 }
 
 function saveSettings() {
@@ -60,4 +92,5 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     loadStats();
+    loadModels();
 });
