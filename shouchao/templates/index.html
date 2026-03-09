@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="{{ current_lang }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShouChao (守巢) v{{ version }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="app-container">
+        <nav class="sidebar">
+            <div class="logo">
+                <h2>守巢</h2>
+                <span class="version">v{{ version }}</span>
+            </div>
+            <ul class="nav-links">
+                <li class="active" data-view="dashboard"><span data-i18n="dashboard">Dashboard</span></li>
+                <li data-view="news"><span data-i18n="fetch_news">News</span></li>
+                <li data-view="briefing"><span data-i18n="news_briefing">Briefing</span></li>
+                <li data-view="analysis"><span data-i18n="general_analysis">Analysis</span></li>
+                <li data-view="search"><span data-i18n="search">Search</span></li>
+                <li data-view="settings"><span data-i18n="settings">Settings</span></li>
+            </ul>
+            <div class="nav-footer">
+                <select id="langSelect" class="lang-select">
+                    {% for code, name in languages.items() %}
+                    <option value="{{ code }}" {% if code == current_lang %}selected{% endif %}>{{ name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </nav>
+
+        <main class="content">
+            <!-- Dashboard -->
+            <section id="view-dashboard" class="view active">
+                <h1 data-i18n="dashboard">Dashboard</h1>
+                <div class="stats-grid" id="statsGrid">
+                    <div class="stat-card">
+                        <div class="stat-number" id="statArticles">0</div>
+                        <div class="stat-label" data-i18n="total_articles">Total Articles</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="statSources">0</div>
+                        <div class="stat-label" data-i18n="sources">Sources</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="statLanguages">10</div>
+                        <div class="stat-label" data-i18n="language_label">Languages</div>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3>Quick Actions</h3>
+                    <div class="btn-group">
+                        <button class="btn btn-primary" onclick="switchView('news');startFetch()" data-i18n="fetch_news">Fetch News</button>
+                        <button class="btn btn-secondary" onclick="switchView('briefing')" data-i18n="news_briefing">Generate Briefing</button>
+                        <button class="btn btn-secondary" onclick="switchView('analysis')" data-i18n="general_analysis">Run Analysis</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- News Browser -->
+            <section id="view-news" class="view">
+                <h1 data-i18n="fetch_news">News</h1>
+                <div class="toolbar">
+                    <select id="newsLang" class="input-sm">
+                        <option value="">All Languages</option>
+                        {% for code, name in languages.items() %}
+                        <option value="{{ code }}">{{ name }}</option>
+                        {% endfor %}
+                    </select>
+                    <input type="date" id="newsDateFrom" class="input-sm">
+                    <input type="date" id="newsDateTo" class="input-sm">
+                    <button class="btn btn-primary btn-sm" onclick="loadNewsList()" data-i18n="search">Search</button>
+                    <button class="btn btn-secondary btn-sm" onclick="startFetch()" data-i18n="fetch_news">Fetch</button>
+                </div>
+                <div class="split-pane">
+                    <div class="list-pane" id="newsList"></div>
+                    <div class="detail-pane" id="newsDetail">
+                        <div class="placeholder" data-i18n="no_results">Select an article</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Briefing -->
+            <section id="view-briefing" class="view">
+                <h1 data-i18n="news_briefing">News Briefing</h1>
+                <div class="toolbar">
+                    <select id="briefingType">
+                        <option value="daily" data-i18n="daily_briefing">Daily</option>
+                        <option value="weekly" data-i18n="weekly_briefing">Weekly</option>
+                    </select>
+                    <select id="briefingLang" class="input-sm">
+                        {% for code, name in languages.items() %}
+                        <option value="{{ code }}" {% if code == current_lang %}selected{% endif %}>{{ name }}</option>
+                        {% endfor %}
+                    </select>
+                    <button class="btn btn-primary btn-sm" onclick="generateBriefing()" data-i18n="generating_briefing">Generate</button>
+                </div>
+                <div class="card output-area" id="briefingOutput">
+                    <div class="placeholder" data-i18n="no_results">Click Generate to create a briefing</div>
+                </div>
+            </section>
+
+            <!-- Analysis -->
+            <section id="view-analysis" class="view">
+                <h1 data-i18n="general_analysis">Analysis</h1>
+                <div class="toolbar">
+                    <select id="analysisScenario">
+                        <option value="general" data-i18n="general_analysis">General</option>
+                        <option value="investment" data-i18n="investment_analysis">Investment</option>
+                        <option value="immigration" data-i18n="immigration_analysis">Immigration</option>
+                        <option value="study_abroad" data-i18n="study_abroad_analysis">Study Abroad</option>
+                    </select>
+                    <input type="text" id="analysisQuery" class="input-lg" placeholder="Enter your analysis query...">
+                    <button class="btn btn-primary btn-sm" onclick="runAnalysis()" data-i18n="analyzing">Analyze</button>
+                </div>
+                <div class="card output-area" id="analysisOutput">
+                    <div class="placeholder">Enter a query and select a scenario</div>
+                </div>
+            </section>
+
+            <!-- Search -->
+            <section id="view-search" class="view">
+                <h1 data-i18n="search">Search</h1>
+                <div class="toolbar">
+                    <input type="text" id="searchQuery" class="input-lg" placeholder="Search news...">
+                    <button class="btn btn-primary btn-sm" onclick="doSearch()" data-i18n="search">Search</button>
+                </div>
+                <div class="split-pane">
+                    <div class="list-pane" id="searchResults"></div>
+                    <div class="detail-pane" id="searchDetail">
+                        <div class="placeholder" data-i18n="no_results">No results</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Settings -->
+            <section id="view-settings" class="view">
+                <h1 data-i18n="settings">Settings</h1>
+                <div class="settings-grid">
+                    <div class="card">
+                        <h3>Ollama</h3>
+                        <div class="form-group">
+                            <label data-i18n="ollama_url">Ollama URL</label>
+                            <input type="text" id="settOllamaUrl" value="{{ config.ollama_url }}">
+                        </div>
+                        <div class="form-group">
+                            <label>Chat Model</label>
+                            <input type="text" id="settChatModel" value="{{ config.chat_model }}">
+                        </div>
+                        <div class="form-group">
+                            <label>Embedding Model</label>
+                            <input type="text" id="settEmbedModel" value="{{ config.embedding_model }}">
+                        </div>
+                        <button class="btn btn-secondary btn-sm" onclick="testConnection()">Test Connection</button>
+                    </div>
+                    <div class="card">
+                        <h3 data-i18n="proxy">Proxy</h3>
+                        <div class="form-group">
+                            <label>Mode</label>
+                            <select id="settProxyMode">
+                                <option value="none" {% if config.proxy_mode == 'none' %}selected{% endif %}>None</option>
+                                <option value="system" {% if config.proxy_mode == 'system' %}selected{% endif %}>System</option>
+                                <option value="manual" {% if config.proxy_mode == 'manual' %}selected{% endif %}>Manual</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>HTTP Proxy</label>
+                            <input type="text" id="settProxyHttp" value="{{ config.proxy_http }}">
+                        </div>
+                        <div class="form-group">
+                            <label>HTTPS Proxy</label>
+                            <input type="text" id="settProxyHttps" value="{{ config.proxy_https }}">
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h3>Fetching</h3>
+                        <div class="form-group">
+                            <label>Default Fetcher</label>
+                            <select id="settFetcher">
+                                <option value="requests" {% if config.default_fetcher == 'requests' %}selected{% endif %}>Requests</option>
+                                <option value="curl" {% if config.default_fetcher == 'curl' %}selected{% endif %}>curl_cffi</option>
+                                <option value="browser" {% if config.default_fetcher == 'browser' %}selected{% endif %}>DrissionPage</option>
+                                <option value="playwright" {% if config.default_fetcher == 'playwright' %}selected{% endif %}>Playwright</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Fetch Delay (seconds)</label>
+                            <input type="number" id="settDelay" value="{{ config.fetch_delay }}" step="0.1" min="0.1">
+                        </div>
+                    </div>
+                </div>
+                <div class="toolbar" style="margin-top:15px">
+                    <button class="btn btn-primary" onclick="saveSettings()" data-i18n="save">Save Settings</button>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        window.SERVER_CONFIG = {
+            translations: {{ translations | tojson }},
+            languages: {{ languages | tojson }},
+            currentLang: "{{ current_lang }}"
+        };
+    </script>
+    <script src="{{ url_for('static', filename='js/i18n.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/news.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/briefing.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/analysis.js') }}"></script>
+</body>
+</html>

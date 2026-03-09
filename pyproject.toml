@@ -1,0 +1,85 @@
+[build-system]
+requires = ["setuptools>=77.0.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "shouchao"
+dynamic = ["version"]
+description = "Global News Intelligence Platform - aggregate, analyze, and brief on world news"
+readme = "README.md"
+license = "GPL-3.0-or-later"
+requires-python = ">=3.10"
+authors = [
+    { name = "ShouChao Contributors" },
+]
+keywords = [
+    "news", "aggregator", "briefing", "analysis", "investment",
+    "immigration", "study-abroad", "multilingual", "rss", "chromadb",
+    "ollama", "flask", "rag",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Web Environment",
+    "Environment :: Console",
+    "Framework :: Flask",
+    "Intended Audience :: End Users/Desktop",
+    "Intended Audience :: Financial and Insurance Industry",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Internet :: WWW/HTTP",
+    "Topic :: Office/Business :: News/Diary",
+]
+dependencies = [
+    "requests>=2.28.0",
+    "beautifulsoup4>=4.11.0",
+    "html2text>=2020.1.16",
+    "feedparser>=6.0.0",
+    "flask>=3.0",
+    "flask-cors>=4.0",
+    "chromadb>=1.0",
+    "rich>=13.0",
+    "certifi>=2023.0.0",
+]
+
+[project.optional-dependencies]
+curl = ["curl-cffi>=0.7.0"]
+browser = ["DrissionPage>=4.0"]
+playwright = ["playwright>=1.40"]
+readability = ["readability-lxml>=0.8.0"]
+gui = []
+dev = ["pytest>=7.0", "build", "twine"]
+all = [
+    "curl-cffi>=0.7.0",
+    "DrissionPage>=4.0",
+    "readability-lxml>=0.8.0",
+]
+
+[project.scripts]
+shouchao = "shouchao.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/cycleuser/ShouChao"
+Repository = "https://github.com/cycleuser/ShouChao"
+Issues = "https://github.com/cycleuser/ShouChao/issues"
+
+[tool.setuptools.dynamic]
+version = { attr = "shouchao.__version__" }
+
+[tool.setuptools.packages.find]
+include = ["shouchao*"]
+
+[tool.setuptools.package-data]
+shouchao = [
+    "templates/**/*",
+    "static/**/*",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
