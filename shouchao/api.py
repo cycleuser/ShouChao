@@ -4,8 +4,11 @@ Unified Python API for ShouChao.
 All public functions return ToolResult and use keyword-only arguments.
 """
 
+import logging
 from dataclasses import dataclass, field
 from typing import Any, Optional
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -76,6 +79,8 @@ def fetch_news(
         http_fetcher = create_fetcher(fetcher, proxy=proxy_str)
         all_articles = []
 
+        logger.info(f"Starting fetch: language={language}, source={source}, max={max_articles}, fetcher={fetcher}")
+        
         try:
             for src in sources:
                 if len(all_articles) >= max_articles * len(sources):

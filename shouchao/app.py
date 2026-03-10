@@ -7,15 +7,38 @@ search, and settings management with SSE streaming.
 
 import json
 import logging
+import sys
 import threading
 from datetime import datetime
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
+# Configure Flask/Werkzeug to use our logging
+def _configure_flask_logging():
+    """Configure Flask to log to stdout with unified format."""
+    import logging
+    
+    # Get the root logger (configured by cli.py)
+    root = logging.getLogger()
+    
+    # Add werkzeug to root logger if not already present
+    werkzeug_logger = logging.getLogger("werkzeug")
+    werkzeug_logger.setLevel(logging.DEBUG)
+    
+    # Remove existing handlers from werkzeug to avoid duplicate logs
+    for h in werkzeug_logger.handlers[:]:
+        werkzeug_logger.removeHandler(h)
+    
+    # Use root logger's handlers (stdout StreamHandler)
+    werkzeug_logger.propagate = True
+
 
 def create_app():
     """Create and configure the Flask application."""
+    # Configure Flask logging to use our unified logging
+    _configure_flask_logging()
+    
     from flask import (
         Flask, render_template, request, jsonify, Response,
         stream_with_context,

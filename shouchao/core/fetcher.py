@@ -89,14 +89,17 @@ class RequestsFetcher(BaseFetcher):
         self._session.mount("https://", adapter)
 
     def fetch(self, url: str) -> tuple[Optional[str], Optional[str]]:
+        logger.debug(f"Fetching URL: {url}")
         try:
             resp = self._session.get(
                 url, timeout=self._timeout, verify=self._verify
             )
             resp.raise_for_status()
             resp.encoding = resp.apparent_encoding or "utf-8"
+            logger.debug(f"Success: {url} -> {resp.status_code} ({len(resp.text)} bytes)")
             return resp.text, None
         except Exception as e:
+            logger.error(f"Failed: {url} -> {type(e).__name__}: {e}")
             return None, str(e)
 
     def close(self) -> None:
@@ -131,14 +134,17 @@ class CurlCffiFetcher(BaseFetcher):
         self._proxy = proxy
 
     def fetch(self, url: str) -> tuple[Optional[str], Optional[str]]:
+        logger.debug(f"Fetching URL (curl_cffi): {url}")
         try:
             kwargs = {"timeout": self._timeout, "verify": self._verify}
             if self._proxy:
                 kwargs["proxies"] = {"http": self._proxy, "https": self._proxy}
             resp = self._session.get(url, **kwargs)
             resp.raise_for_status()
+            logger.debug(f"Success: {url} -> {resp.status_code} ({len(resp.text)} bytes)")
             return resp.text, None
         except Exception as e:
+            logger.error(f"Failed: {url} -> {type(e).__name__}: {e}")
             return None, str(e)
 
     def close(self) -> None:
@@ -179,14 +185,17 @@ class PlaywrightFetcher(BaseFetcher):
         self._timeout = timeout * 1000  # ms
 
     def fetch(self, url: str) -> tuple[Optional[str], Optional[str]]:
+        logger.debug(f"Fetching URL (playwright): {url}")
         try:
             page = self._context.new_page()
             page.goto(url, wait_until="networkidle", timeout=self._timeout)
             page.wait_for_timeout(500)
             html = page.content()
             page.close()
+            logger.debug(f"Success: {url} -> rendered ({len(html)} bytes)")
             return html, None
         except Exception as e:
+            logger.error(f"Failed: {url} -> {type(e).__name__}: {e}")
             return None, str(e)
 
     def close(self) -> None:

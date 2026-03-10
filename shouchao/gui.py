@@ -5,8 +5,10 @@ Provides a tabbed interface for news browsing, briefings, analysis,
 search, and fetching configuration.
 """
 
+import sys
 import threading
 import logging
+import traceback
 from datetime import datetime
 from pathlib import Path
 
@@ -15,6 +17,23 @@ logger = logging.getLogger(__name__)
 
 def launch_gui():
     """Launch the ShouChao GUI application."""
+    logger.info("Initializing GUI...")
+    
+    # Set up global exception handler for GUI
+    def gui_excepthook(exc_type, exc_value, exc_traceback):
+        error_msg = ''.join(traceback.format_exception(exc_type, exc_value, exc_traceback))
+        logger.error(f"GUI Exception:\n{error_msg}")
+        import tkinter as tk
+        from tkinter import messagebox
+        try:
+            root = tk.Tk()
+            root.withdraw()
+            messagebox.showerror("Error", f"An error occurred:\n{exc_value}")
+        except Exception:
+            pass
+    
+    sys.excepthook = gui_excepthook
+    
     import tkinter as tk
     from tkinter import ttk, scrolledtext, messagebox, filedialog
 
@@ -120,9 +139,11 @@ def launch_gui():
     def _load_articles():
         lang = lang_var.get()
         lang_filter = None if lang == "all" else lang
+        logger.debug(f"GUI: Loading articles (lang={lang_filter})")
         from shouchao.core.storage import ArticleStorage
         storage = ArticleStorage()
         articles = storage.list_articles(language=lang_filter)
+        logger.debug(f"GUI: Loaded {len(articles)} articles")
         news_tree.delete(*news_tree.get_children())
         for a in articles[:500]:
             news_tree.insert("", "end", values=(

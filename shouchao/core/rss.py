@@ -84,6 +84,7 @@ def fetch_feed(url: str, proxy: Optional[dict] = None) -> list[RSSEntry]:
     Returns:
         List of RSSEntry objects
     """
+    logger.debug(f"RSS: Fetching feed: {url}")
     try:
         import feedparser
     except ImportError:
@@ -101,6 +102,7 @@ def fetch_feed(url: str, proxy: Optional[dict] = None) -> list[RSSEntry]:
         logger.warning("Feed %s has errors: %s", url, feed.bozo_exception)
         return []
 
+    logger.debug(f"RSS: Parsed {len(feed.entries)} entries from {url}")
     entries = []
     seen_urls = set()
 

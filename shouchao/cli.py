@@ -96,11 +96,46 @@ Examples:
 
 
 def _setup_logging(verbose=False, quiet=False):
-    level = logging.DEBUG if verbose else (logging.WARNING if quiet else logging.INFO)
-    logging.basicConfig(
-        level=level,
-        format="%(levelname)s: %(message)s",
-    )
+    """Configure DEBUG level logging, output to both stdout and file."""
+    from shouchao.core.config import LOGS_DIR, ensure_dirs
+    
+    ensure_dirs()
+    
+    # Always use DEBUG level for maximum logging
+    level = logging.DEBUG if verbose else (logging.WARNING if quiet else logging.DEBUG)
+    
+    # Unified format: [时间][线程][模块:行号][级别]消息
+    fmt = "[%(asctime)s][%(threadName)s][%(name)s:%(lineno)d][%(levelname)s] %(message)s"
+    date_fmt = "%Y-%m-%d %H:%M:%S"
+    formatter = logging.Formatter(fmt, datefmt=date_fmt)
+    
+    root = logging.getLogger()
+    # Clear existing handlers to avoid duplicates
+    for h in root.handlers[:]:
+        root.removeHandler(h)
+    
+    # StreamHandler bound to stdout for real-time CLI output
+    console = logging.StreamHandler(sys.stdout)
+    console.setLevel(level)
+    console.setFormatter(formatter)
+    root.addHandler(console)
+    
+    # Also log to file for persistence
+    log_file = LOGS_DIR / "shouchao.log"
+    file_handler = logging.FileHandler(log_file, encoding="utf-8")
+    file_handler.setLevel(logging.DEBUG)
+    file_handler.setFormatter(formatter)
+    root.addHandler(file_handler)
+    
+    root.setLevel(level)
+    
+    # Suppress noisy third-party libraries
+    for lib in ("urllib3", "requests", "chroma", "chromadb", "feedparser", "bs4", "html2text"):
+        logging.getLogger(lib).setLevel(logging.WARNING)
+    logging.getLogger("werkzeug").setLevel(logging.INFO)
+    logging.getLogger("flask").setLevel(logging.INFO)
+    
+    logging.info(f"Logging initialized: level={logging.getLevelName(level)}, file={log_file}")
 
 
 def _parse_common_flags(parser):
