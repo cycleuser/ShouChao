@@ -6,8 +6,8 @@
 
 - **10语言覆盖**: 中文、英文、日文、法文、俄文、德文、意大利文、西班牙文、葡萄牙文、韩文
 - **100+新闻源**: 新华网、BBC、NHK、Le Monde、ТАСС、DW、ANSA、El Pais、Folha、연합뉴스等
-- **多种抓取后端**: requests、curl_cffi、DrissionPage、Playwright，模拟人类浏览行为
-- **RSS + 网页抓取**: RSS订阅高效发现新闻，网页抓取获取完整文章
+- **多种获取后端**: requests、curl_cffi、DrissionPage、Playwright，模拟人类浏览行为
+- **RSS + 网页读取**: RSS订阅高效发现新闻，网页读取获取完整文章
 - **Markdown存储**: 文章保存为 `{语言}/{网站名}/{年月日}/{标题}.md` 格式，包含YAML头信息
 - **ChromaDB知识库**: 兼容GangDan的向量数据库，支持语义搜索
 - **AI分析**: 通过Ollama提供投资、移民、留学和综合新闻分析
@@ -37,8 +37,8 @@ pip install -e .
 ### 可选依赖
 
 ```bash
-pip install shouchao[all]         # 所有可选抓取器 + readability
-pip install shouchao[curl]        # curl_cffi 更好的反爬虫
+pip install shouchao[all]         # 所有可选模块 + readability
+pip install shouchao[curl]        # curl_cffi 更好的浏览器模拟
 pip install shouchao[browser]     # DrissionPage（系统Chrome）
 pip install shouchao[readability]  # 更好的内容提取
 ```
@@ -49,7 +49,7 @@ pip install shouchao[readability]  # 更好的内容提取
 # 列出可用新闻源
 shouchao sources --language zh
 
-# 抓取新闻
+# 获取新闻
 shouchao fetch --language zh --max 10
 
 # 搜索已索引的新闻
@@ -74,7 +74,7 @@ shouchao gui
 
 | 命令 | 说明 |
 |------|------|
-| `shouchao fetch` | 从新闻源抓取新闻 |
+| `shouchao fetch` | 从新闻源获取新闻 |
 | `shouchao search "查询"` | 搜索已索引的新闻 |
 | `shouchao briefing` | 生成新闻简报 |
 | `shouchao analyze "查询"` | 场景化新闻分析 |
@@ -112,7 +112,7 @@ from shouchao import fetch_news, search_news, analyze_news, list_sources
 result = list_sources(language="zh")
 print(result.data["count"])
 
-# 抓取新闻
+# 获取新闻
 result = fetch_news(language="zh", max_articles=10)
 print(result.data["fetched"])
 

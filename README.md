@@ -6,8 +6,8 @@ Aggregates news from 100+ major media sources across 10 languages, converts arti
 
 - **10-Language Coverage**: Chinese, English, Japanese, French, Russian, German, Italian, Spanish, Portuguese, Korean
 - **100+ News Sources**: Reuters, BBC, NHK, Le Monde, TASS, DW, ANSA, El Pais, Folha, Yonhap, and many more
-- **Multiple Fetcher Backends**: requests, curl_cffi, DrissionPage, Playwright with human-like browsing behavior
-- **RSS + Web Scraping**: RSS feeds for efficient discovery, web scraping for full articles
+- **Multiple Reader Backends**: requests, curl_cffi, DrissionPage, Playwright with human-like browsing behavior
+- **RSS + Web Reading**: RSS feeds for efficient discovery, web reading for full articles
 - **Markdown Storage**: Articles saved as `{lang}/{site}/{date}/{title}.md` with YAML front matter
 - **ChromaDB Knowledge Base**: GangDan-compatible vector database for semantic search
 - **AI Analysis**: Investment, immigration, study abroad, and general news analysis via Ollama
@@ -37,8 +37,8 @@ pip install -e .
 ### Optional dependencies
 
 ```bash
-pip install shouchao[all]        # All optional fetchers + readability
-pip install shouchao[curl]       # curl_cffi for better bot evasion
+pip install shouchao[all]        # All optional modules + readability
+pip install shouchao[curl]       # curl_cffi for better browser simulation
 pip install shouchao[browser]    # DrissionPage (system Chrome)
 pip install shouchao[readability] # Better content extraction
 ```

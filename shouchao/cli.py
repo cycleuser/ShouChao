@@ -1,7 +1,7 @@
 """
 Command-line interface for ShouChao.
 
-Provides subcommands for fetching, searching, briefing, analysis,
+Provides subcommands for getting, searching, briefing, analysis,
 indexing, source management, configuration, and launching GUI/Web.
 """
 
@@ -54,7 +54,7 @@ def _build_main_parser() -> argparse.ArgumentParser:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""\
 Subcommands:
-  fetch       Fetch news from sources
+  fetch       Get news from sources
   search      Search indexed news
   briefing    Generate news briefings
   analyze     Analyze news for scenarios (investment/immigration/study)
@@ -167,7 +167,7 @@ def _output(args, data, text_func):
 
 def cmd_fetch():
     parser = argparse.ArgumentParser(prog="shouchao fetch",
-                                     description="Fetch news from sources")
+                                     description="Get news from sources")
     _parse_common_flags(parser)
     parser.add_argument("--language", "-l", help="Language code(s), comma-separated")
     parser.add_argument("--category", "-c", help="Category filter")
@@ -207,10 +207,10 @@ def cmd_fetch():
 
     def _print_text():
         if has_rich:
-            console.print(f"\n[bold green]Fetched {total} articles[/bold green]\n")
+            console.print(f"\n[bold green]Got {total} articles[/bold green]\n")
             if total > 0 and not args.quiet:
                 from rich.table import Table
-                table = Table(title="Fetched Articles")
+                table = Table(title="Retrieved Articles")
                 table.add_column("Source", style="cyan")
                 table.add_column("Language", style="magenta")
                 table.add_column("Date")
@@ -224,7 +224,7 @@ def cmd_fetch():
                     )
                 console.print(table)
         else:
-            print(f"Fetched {total} articles")
+            print(f"Got {total} articles")
             for a in all_results[:20]:
                 print(f"  [{a.get('language')}] {a.get('source')}: {a.get('title', '')[:60]}")
 

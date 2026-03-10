@@ -33,7 +33,7 @@ TRANSLATIONS = {
         "ko": "ShouChao - 웹 정보 검색 보조 도구",
     },
     "fetch_news": {
-        "zh": "抓取新闻", "en": "Fetch News", "ja": "ニュース取得",
+        "zh": "获取新闻", "en": "Get News", "ja": "ニュース取得",
         "fr": "Récupérer les nouvelles", "ru": "Получить новости",
         "de": "Nachrichten abrufen", "it": "Recupera notizie",
         "es": "Obtener noticias", "pt": "Buscar notícias", "ko": "뉴스 가져오기",
@@ -220,7 +220,7 @@ TRANSLATIONS = {
         "es": "Total de artículos", "pt": "Total de artigos", "ko": "총 기사 수",
     },
     "fetching_progress": {
-        "zh": "正在抓取新闻...", "en": "Fetching news...", "ja": "ニュースを取得中...",
+        "zh": "正在获取新闻...", "en": "Getting news...", "ja": "ニュースを取得中...",
         "fr": "Récupération des nouvelles...", "ru": "Получение новостей...",
         "de": "Nachrichten werden abgerufen...", "it": "Recupero notizie...",
         "es": "Obteniendo noticias...", "pt": "Buscando notícias...", "ko": "뉴스 가져오는 중...",

@@ -12,8 +12,8 @@ TOOLS = [
             "name": "shouchao_fetch_news",
             "description": (
                 "Fetch news articles from global media sources across "
-                "10 languages. Supports RSS feeds and web scraping with "
-                "human-like browsing behavior."
+                "10 languages. Supports RSS feeds and web reading with "
+                "human-like browsing behavior for assisted reading."
             ),
             "parameters": {
                 "type": "object",
