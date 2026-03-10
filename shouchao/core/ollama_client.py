@@ -31,7 +31,11 @@ class OllamaClient:
         try:
             resp = requests.get(f"{self.api_url}/api/tags", timeout=5)
             return resp.status_code == 200
-        except Exception:
+        except requests.exceptions.ConnectionError:
+            logger.debug("Ollama not running at %s", self.api_url)
+            return False
+        except Exception as e:
+            logger.warning("Ollama availability check failed: %s", e)
             return False
 
     def get_models(self) -> list[dict]:
@@ -67,6 +71,18 @@ class OllamaClient:
             List of floats (embedding vector) or None on error.
         """
         try:
+            # Try new API format first (/api/embeddings)
+            resp = requests.post(
+                f"{self.api_url}/api/embeddings",
+                json={"model": model, "prompt": text},
+                timeout=60,
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                embedding = data.get("embedding")
+                if embedding:
+                    return embedding
+            # Fallback to old API format (/api/embed with "input")
             resp = requests.post(
                 f"{self.api_url}/api/embed",
                 json={"model": model, "input": text},
