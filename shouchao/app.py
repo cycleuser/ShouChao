@@ -274,7 +274,8 @@ def create_app():
     def api_models():
         try:
             from shouchao.core.ollama_client import OllamaClient
-            client = OllamaClient(CONFIG.ollama_url)
+            url = request.args.get("url", CONFIG.ollama_url)
+            client = OllamaClient(url)
             return jsonify({
                 "available": client.is_available(),
                 "chat_models": client.get_chat_models(),
@@ -290,9 +291,21 @@ def create_app():
         counts = storage.count_articles()
         from shouchao.core.sources import get_sources
         sources_count = len(get_sources())
+        
+        indexed_count = 0
+        try:
+            from shouchao.core.indexer import NewsIndexer
+            from shouchao.core.ollama_client import OllamaClient
+            ollama = OllamaClient(CONFIG.ollama_url)
+            indexer = NewsIndexer(ollama)
+            indexed_count = indexer.get_document_count()
+        except Exception:
+            pass
+        
         return jsonify({
             "articles": counts,
             "sources_count": sources_count,
+            "indexed": indexed_count,
             "version": __version__,
         })
 
@@ -311,6 +324,202 @@ def create_app():
         from shouchao.api import index_news
         result = index_news(collection=collection)
         return jsonify(result.to_dict())
+
+    @app.route("/api/web-search", methods=["POST"])
+    def api_web_search():
+        data = request.get_json(silent=True) or {}
+        query = data.get("query", "")
+        engines = data.get("engines")
+        num_results = data.get("num_results", 10)
+        language = data.get("language")
+
+        from shouchao.api import web_search
+        result = web_search(
+            query=query,
+            engines=engines,
+            num_results=num_results,
+            language=language,
+        )
+        return jsonify(result.to_dict())
+
+    @app.route("/api/tts", methods=["POST"])
+    def api_tts():
+        data = request.get_json(silent=True) or {}
+        text = data.get("text", "")
+        engine = data.get("engine")
+        voice = data.get("voice")
+        language = data.get("language")
+        rate = data.get("rate", 1.0)
+
+        from shouchao.api import text_to_speech
+        result = text_to_speech(
+            text=text,
+            engine=engine,
+            voice=voice,
+            language=language,
+            rate=rate,
+        )
+        return jsonify(result.to_dict())
+
+    @app.route("/api/tts/voices", methods=["GET"])
+    def api_tts_voices():
+        engine = request.args.get("engine", "edge-tts")
+        language = request.args.get("language")
+
+        from shouchao.core.tts import TTSEngine
+        tts = TTSEngine(preferred_engine=engine)
+        voices = tts.get_voices(engine=engine, language=language)
+        return jsonify({"voices": [v.to_dict() for v in voices]})
+
+    @app.route("/api/export", methods=["POST"])
+    def api_export():
+        data = request.get_json(silent=True) or {}
+        content = data.get("content", "")
+        title = data.get("title", "Untitled")
+        output_path = data.get("output_path")
+        format = data.get("format", "pdf")
+        language = data.get("language")
+
+        if not output_path:
+            from shouchao.core.config import DATA_DIR
+            export_dir = DATA_DIR / "exports"
+            export_dir.mkdir(parents=True, exist_ok=True)
+            import uuid
+            output_path = str(export_dir / f"{uuid.uuid4().hex}.{format}")
+
+        from shouchao.api import export_document
+        result = export_document(
+            content=content,
+            title=title,
+            output_path=output_path,
+            format=format,
+            language=language,
+        )
+        return jsonify(result.to_dict())
+
+    @app.route("/api/keyword-search", methods=["POST"])
+    def api_keyword_search():
+        data = request.get_json(silent=True) or {}
+        keywords = data.get("keywords", [])
+        engines = data.get("engines")
+        language = data.get("language")
+        scenario = data.get("scenario", "general")
+        max_results = data.get("max_results", 10)
+
+        from shouchao.api import keyword_search_and_summarize
+        result = keyword_search_and_summarize(
+            keywords=keywords,
+            engines=engines,
+            language=language,
+            scenario=scenario,
+            max_results=max_results,
+        )
+        return jsonify(result.to_dict())
+
+    @app.route("/api/summarize", methods=["POST"])
+    def api_summarize():
+        data = request.get_json(silent=True) or {}
+        content = data.get("content", "")
+        target_language = data.get("target_language", "en")
+        style = data.get("style", "detailed")
+        source_language = data.get("source_language")
+        max_length = data.get("max_length")
+
+        from shouchao.api import summarize_content
+        result = summarize_content(
+            content=content,
+            target_language=target_language,
+            style=style,
+            source_language=source_language,
+            max_length=max_length,
+        )
+        return jsonify(result.to_dict())
+
+    @app.route("/api/summarize-and-speak", methods=["POST"])
+    def api_summarize_and_speak():
+        data = request.get_json(silent=True) or {}
+        content = data.get("content", "")
+        target_language = data.get("target_language", "en")
+        style = data.get("style", "story")
+        voice = data.get("voice")
+        tts_engine = data.get("tts_engine", "edge-tts")
+
+        from shouchao.api import summarize_and_speak
+        result = summarize_and_speak(
+            content=content,
+            target_language=target_language,
+            style=style,
+            voice=voice,
+            tts_engine=tts_engine,
+        )
+        return jsonify(result.to_dict())
+
+    @app.route("/api/fetch-url", methods=["POST"])
+    def api_fetch_url():
+        data = request.get_json(silent=True) or {}
+        url = data.get("url", "")
+
+        if not url:
+            return jsonify({"success": False, "error": "URL is required"})
+
+        try:
+            from shouchao.core.config import CONFIG, get_proxies
+            from shouchao.core.converter import html_to_markdown
+
+            proxy = get_proxies()
+            proxy_str = proxy.get("https") if proxy else None
+
+            import requests
+            session = requests.Session()
+            if proxy_str:
+                session.proxies = {"http": proxy_str, "https": proxy_str}
+
+            resp = session.get(url, timeout=15)
+            resp.raise_for_status()
+
+            content, meta = html_to_markdown(resp.text, url)
+
+            return jsonify({
+                "success": True,
+                "data": {
+                    "content": content,
+                    "title": meta.get("title", ""),
+                    "url": url,
+                }
+            })
+        except Exception as e:
+            return jsonify({"success": False, "error": str(e)})
+
+    @app.route("/api/proxy/test", methods=["POST"])
+    def api_proxy_test():
+        data = request.get_json(silent=True) or {}
+
+        from shouchao.core.config import test_proxy_connection
+        
+        mode = data.get("mode", "none")
+        if mode == "manual":
+            from shouchao.core.config import CONFIG
+            CONFIG.proxy_mode = mode
+            CONFIG.proxy_http = data.get("http", "")
+            CONFIG.proxy_https = data.get("https", "")
+            CONFIG.proxy_socks5 = data.get("socks5", "")
+            CONFIG.proxy_username = data.get("username", "")
+            CONFIG.proxy_password = data.get("password", "")
+        elif mode == "system":
+            from shouchao.core.config import CONFIG
+            CONFIG.proxy_mode = mode
+
+        result = test_proxy_connection()
+        return jsonify(result)
+
+    @app.route("/api/audio")
+    def api_audio():
+        audio_path = request.args.get("path", "")
+        if not audio_path or not Path(audio_path).exists():
+            return "Audio not found", 404
+        
+        from flask import send_file
+        return send_file(audio_path, mimetype="audio/mpeg")
 
     return app
 

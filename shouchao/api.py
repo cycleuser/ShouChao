@@ -28,6 +28,426 @@ class ToolResult:
         }
 
 
+def web_search(
+    *,
+    query: str,
+    engines: Optional[list[str]] = None,
+    num_results: int = 10,
+    language: Optional[str] = None,
+) -> ToolResult:
+    """Search the web using multiple search engines.
+
+    Args:
+        query: Search query string.
+        engines: List of engines to use (duckduckgo, google, bing, brave, searxng).
+        num_results: Maximum results per engine.
+        language: Language filter for results.
+
+    Returns:
+        ToolResult with search results.
+    """
+    try:
+        from shouchao import __version__
+        from shouchao.core.web_search import WebSearchEngine
+
+        search_engine = WebSearchEngine()
+        response = search_engine.search(
+            query=query,
+            engines=engines or ["duckduckgo"],
+            num_results=num_results,
+            language=language,
+        )
+
+        return ToolResult(
+            success=True,
+            data=response.to_dict(),
+            metadata={"version": __version__, "engine": response.engine},
+        )
+    except Exception as e:
+        from shouchao import __version__
+        return ToolResult(
+            success=False,
+            error=str(e),
+            metadata={"version": __version__},
+        )
+
+
+def text_to_speech(
+    *,
+    text: str,
+    output_path: Optional[str] = None,
+    engine: Optional[str] = None,
+    voice: Optional[str] = None,
+    language: Optional[str] = None,
+    rate: float = 1.0,
+) -> ToolResult:
+    """Convert text to speech audio.
+
+    Args:
+        text: Text to convert to speech.
+        output_path: Output audio file path (auto-generated if None).
+        engine: TTS engine (edge-tts, pyttsx3, gtts, sherpa-onnx).
+        voice: Voice ID to use.
+        language: Language code for voice selection.
+        rate: Speech rate multiplier (1.0 = normal).
+
+    Returns:
+        ToolResult with audio file path.
+    """
+    try:
+        from shouchao import __version__
+        from shouchao.core.tts import TTSEngine
+
+        tts = TTSEngine(preferred_engine=engine)
+        result = tts.synthesize(
+            text=text,
+            output_path=output_path,
+            voice=voice,
+            language=language,
+            rate=rate,
+        )
+
+        return ToolResult(
+            success=result.success,
+            data={
+                "audio_path": result.audio_path,
+                "duration": result.duration,
+                "engine": result.engine,
+            },
+            error=result.error,
+            metadata={"version": __version__},
+        )
+    except Exception as e:
+        from shouchao import __version__
+        return ToolResult(
+            success=False,
+            error=str(e),
+            metadata={"version": __version__},
+        )
+
+
+def export_document(
+    *,
+    content: str,
+    title: str,
+    output_path: str,
+    format: str = "pdf",
+    language: Optional[str] = None,
+) -> ToolResult:
+    """Export content to various document formats.
+
+    Args:
+        content: Content to export (Markdown format).
+        title: Document title.
+        output_path: Output file path.
+        format: Export format (pdf, epub, docx, html, md, audio).
+        language: Language for audio export.
+
+    Returns:
+        ToolResult with export status and file path.
+    """
+    try:
+        from shouchao import __version__
+        from shouchao.core.exporter import Exporter
+
+        exporter = Exporter()
+        result = exporter.export(
+            content=content,
+            title=title,
+            output_path=output_path,
+            format=format,
+            metadata={"language": language} if language else None,
+        )
+
+        return ToolResult(
+            success=result.success,
+            data={
+                "output_path": result.output_path,
+                "file_size": result.file_size,
+                "format": result.format,
+            },
+            error=result.error,
+            metadata={"version": __version__},
+        )
+    except Exception as e:
+        from shouchao import __version__
+        return ToolResult(
+            success=False,
+            error=str(e),
+            metadata={"version": __version__},
+        )
+
+
+def keyword_search_and_summarize(
+    *,
+    keywords: list[str],
+    engines: Optional[list[str]] = None,
+    language: Optional[str] = None,
+    scenario: str = "general",
+    max_results: int = 10,
+) -> ToolResult:
+    """Search web for keywords and generate AI summary.
+
+    Args:
+        keywords: List of keywords to search.
+        engines: Search engines to use.
+        language: Language filter.
+        scenario: Analysis scenario (general, investment, immigration, study_abroad).
+        max_results: Maximum results per keyword.
+
+    Returns:
+        ToolResult with combined search results and AI summary.
+    """
+    try:
+        from shouchao import __version__
+        from shouchao.core.web_search import WebSearchEngine
+        from shouchao.core.config import CONFIG, load_config
+
+        load_config()
+
+        search_engine = WebSearchEngine()
+        all_results = []
+        query_parts = []
+
+        for keyword in keywords:
+            response = search_engine.search(
+                query=keyword,
+                engines=engines or ["duckduckgo"],
+                num_results=max_results,
+                language=language,
+            )
+            if response.results:
+                all_results.extend(response.results)
+                query_parts.append(keyword)
+
+        combined_query = " ".join(query_parts)
+
+        summary = None
+        if all_results and CONFIG.ollama_url:
+            try:
+                from shouchao.core.ollama_client import OllamaClient
+                from shouchao.core.summarizer import ContentSummarizer
+
+                ollama = OllamaClient(CONFIG.ollama_url)
+                summarizer = ContentSummarizer(ollama)
+
+                context = "\n\n".join([
+                    f"**{r.title}**\n{r.snippet}\nSource: {r.source}"
+                    for r in all_results[:10]
+                ])
+
+                summary = summarizer.summarize_complete(
+                    content=context,
+                    target_language=language or CONFIG.language,
+                    style="detailed",
+                )
+            except Exception as e:
+                logger.warning(f"Failed to generate summary: {e}")
+
+        return ToolResult(
+            success=True,
+            data={
+                "keywords": keywords,
+                "results": [r.to_dict() for r in all_results[:max_results * len(keywords)]],
+                "total": len(all_results),
+                "summary": summary,
+            },
+            metadata={"version": __version__},
+        )
+    except Exception as e:
+        from shouchao import __version__
+        return ToolResult(
+            success=False,
+            error=str(e),
+            metadata={"version": __version__},
+        )
+
+
+def summarize_content(
+    *,
+    content: str,
+    target_language: str = "en",
+    style: str = "detailed",
+    source_language: Optional[str] = None,
+    max_length: Optional[int] = None,
+) -> ToolResult:
+    """Summarize content with AI, supporting language translation.
+
+    Args:
+        content: The content to summarize.
+        target_language: Target language for the summary (e.g., "en", "zh").
+        style: Summary style ("brief", "detailed", "bullet", "executive", "story").
+        source_language: Source language (auto-detected if None).
+        max_length: Maximum length in words (optional).
+
+    Returns:
+        ToolResult with the summary.
+    """
+    try:
+        from shouchao import __version__
+        from shouchao.core.config import CONFIG, load_config
+        from shouchao.core.ollama_client import OllamaClient
+        from shouchao.core.summarizer import ContentSummarizer, SUMMARY_STYLES
+
+        load_config()
+
+        if style not in SUMMARY_STYLES:
+            style = "detailed"
+
+        ollama = OllamaClient(CONFIG.ollama_url)
+        summarizer = ContentSummarizer(ollama)
+
+        if source_language and source_language != target_language:
+            summary = summarizer.translate_and_summarize_complete(
+                content=content,
+                source_language=source_language,
+                target_language=target_language,
+                style=style,
+            )
+        else:
+            summary = summarizer.summarize_complete(
+                content=content,
+                target_language=target_language,
+                style=style,
+                max_length=max_length,
+            )
+
+        return ToolResult(
+            success=True,
+            data={
+                "summary": summary,
+                "target_language": target_language,
+                "style": style,
+            },
+            metadata={"version": __version__},
+        )
+    except Exception as e:
+        from shouchao import __version__
+        return ToolResult(
+            success=False,
+            error=str(e),
+            metadata={"version": __version__},
+        )
+
+
+def get_tts_voices(
+    *,
+    engine: str = "edge-tts",
+    language: Optional[str] = None,
+) -> ToolResult:
+    """Get available TTS voices for an engine.
+
+    Args:
+        engine: TTS engine name (edge-tts, pyttsx3, gtts).
+        language: Filter voices by language.
+
+    Returns:
+        ToolResult with list of available voices.
+    """
+    try:
+        from shouchao import __version__
+        from shouchao.core.tts import TTSEngine
+
+        tts = TTSEngine(preferred_engine=engine)
+        voices = tts.get_voices(engine=engine, language=language)
+
+        return ToolResult(
+            success=True,
+            data={
+                "engine": engine,
+                "voices": [v.to_dict() for v in voices],
+                "count": len(voices),
+            },
+            metadata={"version": __version__},
+        )
+    except Exception as e:
+        from shouchao import __version__
+        return ToolResult(
+            success=False,
+            error=str(e),
+            metadata={"version": __version__},
+        )
+
+
+def summarize_and_speak(
+    *,
+    content: str,
+    target_language: str = "en",
+    style: str = "story",
+    voice: Optional[str] = None,
+    tts_engine: str = "edge-tts",
+    output_path: Optional[str] = None,
+) -> ToolResult:
+    """Summarize content and convert to speech in one step.
+
+    This is optimized for creating audio briefings - uses "story" style
+    by default which produces narrative summaries ideal for TTS.
+
+    Args:
+        content: Content to summarize.
+        target_language: Target language for summary and speech.
+        style: Summary style (default: "story" for TTS).
+        voice: Specific voice ID to use.
+        tts_engine: TTS engine (edge-tts, gtts, pyttsx3).
+        output_path: Output audio file path (auto-generated if None).
+
+    Returns:
+        ToolResult with audio path and summary.
+    """
+    try:
+        from shouchao import __version__
+        from shouchao.core.config import CONFIG, load_config
+        from shouchao.core.ollama_client import OllamaClient
+        from shouchao.core.summarizer import ContentSummarizer
+        from shouchao.core.tts import TTSEngine
+
+        load_config()
+
+        ollama = OllamaClient(CONFIG.ollama_url)
+        summarizer = ContentSummarizer(ollama)
+
+        summary = summarizer.summarize_complete(
+            content=content,
+            target_language=target_language,
+            style=style,
+        )
+
+        tts = TTSEngine(preferred_engine=tts_engine)
+
+        if not voice:
+            voices = tts.get_voices(engine=tts_engine, language=target_language)
+            if voices:
+                voice = voices[0].id
+
+        tts_result = tts.synthesize(
+            text=summary,
+            output_path=output_path,
+            engine=tts_engine,
+            voice=voice,
+            language=target_language,
+        )
+
+        return ToolResult(
+            success=tts_result.success,
+            data={
+                "summary": summary,
+                "audio_path": tts_result.audio_path,
+                "duration": tts_result.duration,
+                "voice": voice,
+                "engine": tts_engine,
+            },
+            error=tts_result.error,
+            metadata={"version": __version__},
+        )
+    except Exception as e:
+        from shouchao import __version__
+        return ToolResult(
+            success=False,
+            error=str(e),
+            metadata={"version": __version__},
+        )
+
+
 def fetch_news(
     *,
     language: Optional[str] = None,

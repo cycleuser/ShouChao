@@ -51,12 +51,24 @@ browser = ["DrissionPage>=4.0"]
 playwright = ["playwright>=1.40"]
 readability = ["readability-lxml>=0.8.0"]
 gui = []
-dev = ["pytest>=7.0", "build", "twine"]
+search = ["duckduckgo-search>=4.0"]
+tts = ["edge-tts>=6.1", "pyttsx3>=2.90", "gtts>=2.3"]
+export = ["weasyprint>=60", "ebooklib>=0.18", "python-docx>=1.0", "markdown>=3.5", "pydub>=0.25"]
 all = [
     "curl-cffi>=0.7.0",
     "DrissionPage>=4.0",
     "readability-lxml>=0.8.0",
+    "duckduckgo-search>=4.0",
+    "edge-tts>=6.1",
+    "pyttsx3>=2.90",
+    "gtts>=2.3",
+    "weasyprint>=60",
+    "ebooklib>=0.18",
+    "python-docx>=1.0",
+    "markdown>=3.5",
+    "pydub>=0.25",
 ]
+dev = ["pytest>=7.0", "build", "twine"]
 
 [project.scripts]
 shouchao = "shouchao.cli:main"

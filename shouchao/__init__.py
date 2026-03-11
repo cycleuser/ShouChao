@@ -6,7 +6,7 @@ converts to markdown, indexes into ChromaDB, and provides
 AI-powered briefings and analysis.
 """
 
-__version__ = "0.1.2"
+__version__ = "0.2.0"
 
 
 def __getattr__(name):
@@ -31,6 +31,27 @@ def __getattr__(name):
     if name == "list_sources":
         from shouchao.api import list_sources
         return list_sources
+    if name == "web_search":
+        from shouchao.api import web_search
+        return web_search
+    if name == "text_to_speech":
+        from shouchao.api import text_to_speech
+        return text_to_speech
+    if name == "export_document":
+        from shouchao.api import export_document
+        return export_document
+    if name == "keyword_search_and_summarize":
+        from shouchao.api import keyword_search_and_summarize
+        return keyword_search_and_summarize
+    if name == "summarize_content":
+        from shouchao.api import summarize_content
+        return summarize_content
+    if name == "get_tts_voices":
+        from shouchao.api import get_tts_voices
+        return get_tts_voices
+    if name == "summarize_and_speak":
+        from shouchao.api import summarize_and_speak
+        return summarize_and_speak
     raise AttributeError(f"module 'shouchao' has no attribute {name!r}")
 
 
@@ -43,4 +64,11 @@ __all__ = [
     "analyze_news",
     "index_news",
     "list_sources",
+    "web_search",
+    "text_to_speech",
+    "export_document",
+    "keyword_search_and_summarize",
+    "summarize_content",
+    "get_tts_voices",
+    "summarize_and_speak",
 ]

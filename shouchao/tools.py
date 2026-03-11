@@ -9,6 +9,145 @@ TOOLS = [
     {
         "type": "function",
         "function": {
+            "name": "shouchao_web_search",
+            "description": (
+                "Search the web using multiple search engines (DuckDuckGo, Google, "
+                "Bing, Brave). Returns aggregated results from all engines."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "Search query text",
+                    },
+                    "engines": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "List of engines to use (duckduckgo, google, bing, brave)",
+                    },
+                    "num_results": {
+                        "type": "integer",
+                        "description": "Maximum results per engine",
+                        "default": 10,
+                    },
+                    "language": {
+                        "type": "string",
+                        "description": "Language filter for results",
+                    },
+                },
+                "required": ["query"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "shouchao_text_to_speech",
+            "description": (
+                "Convert text to speech audio using various TTS engines. "
+                "Supports offline (pyttsx3) and online (edge-tts, gtts) synthesis."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "text": {
+                        "type": "string",
+                        "description": "Text to convert to speech",
+                    },
+                    "engine": {
+                        "type": "string",
+                        "description": "TTS engine to use",
+                        "enum": ["edge-tts", "gtts", "pyttsx3"],
+                        "default": "edge-tts",
+                    },
+                    "voice": {
+                        "type": "string",
+                        "description": "Voice ID to use",
+                    },
+                    "language": {
+                        "type": "string",
+                        "description": "Language code for voice selection",
+                    },
+                    "rate": {
+                        "type": "number",
+                        "description": "Speech rate multiplier",
+                        "default": 1.0,
+                    },
+                },
+                "required": ["text"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "shouchao_export_document",
+            "description": (
+                "Export content to various document formats including PDF, "
+                "EPUB, DOCX, HTML, and Markdown."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "content": {
+                        "type": "string",
+                        "description": "Content to export (Markdown format)",
+                    },
+                    "title": {
+                        "type": "string",
+                        "description": "Document title",
+                    },
+                    "output_path": {
+                        "type": "string",
+                        "description": "Output file path",
+                    },
+                    "format": {
+                        "type": "string",
+                        "description": "Export format",
+                        "enum": ["pdf", "epub", "docx", "html", "md"],
+                        "default": "pdf",
+                    },
+                },
+                "required": ["content", "title", "output_path"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "shouchao_keyword_search_and_summarize",
+            "description": (
+                "Search web for multiple keywords and generate an AI-powered "
+                "summary of the combined results."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "keywords": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "List of keywords to search",
+                    },
+                    "scenario": {
+                        "type": "string",
+                        "description": "Analysis scenario",
+                        "enum": ["general", "investment", "immigration", "study_abroad"],
+                        "default": "general",
+                    },
+                    "max_results": {
+                        "type": "integer",
+                        "description": "Maximum results per keyword",
+                        "default": 10,
+                    },
+                },
+                "required": ["keywords"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "shouchao_fetch_news",
             "description": (
                 "Fetch news articles from global media sources across "
@@ -190,12 +329,24 @@ TOOLS = [
 ]
 
 
-def dispatch(name: str, arguments: dict[str, Any] | str) -> dict:
+def dispatch(name: str, arguments: Any) -> dict:
     """Dispatch a tool call to the corresponding API function."""
     if isinstance(arguments, str):
         arguments = json.loads(arguments)
 
-    if name == "shouchao_fetch_news":
+    if name == "shouchao_web_search":
+        from shouchao.api import web_search
+        return web_search(**arguments).to_dict()
+    elif name == "shouchao_text_to_speech":
+        from shouchao.api import text_to_speech
+        return text_to_speech(**arguments).to_dict()
+    elif name == "shouchao_export_document":
+        from shouchao.api import export_document
+        return export_document(**arguments).to_dict()
+    elif name == "shouchao_keyword_search_and_summarize":
+        from shouchao.api import keyword_search_and_summarize
+        return keyword_search_and_summarize(**arguments).to_dict()
+    elif name == "shouchao_fetch_news":
         from shouchao.api import fetch_news
         return fetch_news(**arguments).to_dict()
     elif name == "shouchao_search_news":

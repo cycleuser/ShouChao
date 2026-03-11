@@ -4,25 +4,310 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ShouChao (手抄) v{{ version }}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --primary-light: #818cf8;
+            --secondary: #64748b;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --bg-input: #334155;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --border-color: #334155;
+            --radius: 12px;
+            --transition: all 0.2s ease;
+        }
+
+        [data-theme="light"] {
+            --bg-dark: #f8fafc;
+            --bg-card: #ffffff;
+            --bg-input: #f1f5f9;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border-color: #e2e8f0;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .app-container { display: flex; min-height: 100vh; }
+
+        /* Sidebar */
+        .sidebar {
+            width: 240px;
+            background: var(--bg-card);
+            border-right: 1px solid var(--border-color);
+            position: fixed;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header { padding: 20px; border-bottom: 1px solid var(--border-color); }
+
+        .logo { display: flex; align-items: center; gap: 10px; }
+        .logo-icon {
+            width: 36px; height: 36px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-weight: bold;
+        }
+        .logo-text h2 { font-size: 18px; }
+        .logo-text span { font-size: 11px; color: var(--text-secondary); }
+
+        .workflow-steps { padding: 15px 10px; flex: 1; }
+
+        .step-item {
+            display: flex; align-items: center; gap: 12px;
+            padding: 12px 15px; margin: 3px 0;
+            border-radius: 8px; cursor: pointer;
+            color: var(--text-secondary);
+            transition: var(--transition);
+        }
+        .step-item:hover { background: var(--bg-input); color: var(--text-primary); }
+        .step-item.active { background: var(--primary); color: white; }
+        .step-item.completed { color: var(--success); }
+        .step-number {
+            width: 24px; height: 24px;
+            border-radius: 50%;
+            background: var(--bg-input);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 12px; font-weight: 600;
+        }
+        .step-item.active .step-number { background: rgba(255,255,255,0.2); }
+        .step-item.completed .step-number { background: var(--success); color: white; }
+
+        .sidebar-footer { padding: 15px; border-top: 1px solid var(--border-color); }
+
+        /* Main Content */
+        .main-content { flex: 1; margin-left: 240px; padding: 20px; }
+
+        .page-header { margin-bottom: 20px; }
+        .page-title { font-size: 24px; font-weight: 600; }
+        .page-subtitle { color: var(--text-secondary); margin-top: 5px; }
+
+        /* Cards */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            padding: 20px;
+            margin-bottom: 15px;
+        }
+        .card-title { font-size: 16px; font-weight: 600; margin-bottom: 15px; }
+
+        /* Form Elements */
+        .form-group { margin-bottom: 15px; }
+        .form-label { display: block; margin-bottom: 6px; font-size: 13px; color: var(--text-secondary); }
+        .form-input, .form-select, .form-textarea {
+            width: 100%; padding: 10px 12px;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: none; border-color: var(--primary);
+        }
+        .form-textarea { resize: vertical; min-height: 100px; }
+
+        .form-row { display: flex; gap: 15px; }
+        .form-row .form-group { flex: 1; }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none; font-size: 14px; font-weight: 500;
+            cursor: pointer; transition: var(--transition);
+        }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-secondary { background: var(--bg-input); color: var(--text-primary); border: 1px solid var(--border-color); }
+        .btn-secondary:hover { background: var(--border-color); }
+        .btn-success { background: var(--success); color: white; }
+        .btn-lg { padding: 14px 28px; font-size: 15px; }
+        .btn-sm { padding: 6px 12px; font-size: 13px; }
+
+        .btn-group { display: flex; gap: 10px; flex-wrap: wrap; }
+
+        /* Language Grid */
+        .lang-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 8px;
+        }
+        .lang-item {
+            display: flex; align-items: center; gap: 8px;
+            padding: 8px 12px;
+            background: var(--bg-input);
+            border-radius: 6px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: var(--transition);
+        }
+        .lang-item:hover { border-color: var(--primary); }
+        .lang-item.selected { border-color: var(--primary); background: rgba(99, 102, 241, 0.15); }
+        .lang-item input { display: none; }
+        .lang-item .check {
+            width: 18px; height: 18px;
+            border: 2px solid var(--border-color);
+            border-radius: 4px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .lang-item.selected .check { background: var(--primary); border-color: var(--primary); }
+        .lang-item.selected .check::after {
+            content: "✓"; color: white; font-size: 12px;
+        }
+
+        /* Progress Steps */
+        .progress-bar {
+            display: flex; align-items: center;
+            margin-bottom: 30px;
+            padding: 20px 0;
+        }
+        .progress-step {
+            flex: 1; text-align: center;
+            position: relative;
+        }
+        .progress-step::after {
+            content: "";
+            position: absolute;
+            top: 15px; left: 50%;
+            width: 100%; height: 2px;
+            background: var(--border-color);
+        }
+        .progress-step:last-child::after { display: none; }
+        .progress-step.active::after { background: var(--primary); }
+        .progress-circle {
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            background: var(--bg-input);
+            border: 2px solid var(--border-color);
+            display: inline-flex; align-items: center; justify-content: center;
+            position: relative; z-index: 1;
+        }
+        .progress-step.active .progress-circle { border-color: var(--primary); color: var(--primary); }
+        .progress-step.completed .progress-circle { background: var(--success); border-color: var(--success); color: white; }
+        .progress-label { font-size: 12px; margin-top: 8px; color: var(--text-secondary); }
+        .progress-step.active .progress-label { color: var(--primary); font-weight: 500; }
+
+        /* News List */
+        .news-list { max-height: 400px; overflow-y: auto; }
+        .news-item {
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .news-item:hover { background: var(--bg-input); }
+        .news-item.selected { background: rgba(99, 102, 241, 0.1); border-left: 3px solid var(--primary); }
+        .news-title { font-weight: 500; margin-bottom: 4px; }
+        .news-meta { font-size: 12px; color: var(--text-secondary); }
+
+        /* Output Area */
+        .output-area {
+            background: var(--bg-input);
+            border-radius: 8px;
+            padding: 15px;
+            min-height: 200px;
+            white-space: pre-wrap;
+            font-size: 14px;
+        }
+
+        /* Voice Selection */
+        .voice-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+        }
+        .voice-item {
+            padding: 12px;
+            background: var(--bg-input);
+            border-radius: 8px;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+        .voice-item:hover { border-color: var(--primary); }
+        .voice-item.selected { border-color: var(--primary); background: rgba(99, 102, 241, 0.15); }
+        .voice-name { font-weight: 500; }
+        .voice-lang { font-size: 12px; color: var(--text-secondary); }
+
+        /* Status */
+        .status-bar {
+            padding: 10px 15px;
+            background: var(--bg-input);
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+        .status-success { color: var(--success); }
+        .status-error { color: var(--danger); }
+        .status-warning { color: var(--warning); }
+
+        /* Hidden */
+        .hidden { display: none !important; }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .sidebar { transform: translateX(-100%); }
+            .main-content { margin-left: 0; }
+        }
+    </style>
 </head>
 <body>
     <div class="app-container">
+        <!-- Sidebar -->
         <nav class="sidebar">
-            <div class="logo">
-                <h2>手抄</h2>
-                <span class="version">v{{ version }}</span>
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon">手</div>
+                    <div class="logo-text">
+                        <h2>ShouChao</h2>
+                        <span>v{{ version }}</span>
+                    </div>
+                </div>
             </div>
-            <ul class="nav-links">
-                <li class="active" data-view="dashboard"><span data-i18n="dashboard">Dashboard</span></li>
-                <li data-view="news"><span data-i18n="fetch_news">News</span></li>
-                <li data-view="briefing"><span data-i18n="news_briefing">Briefing</span></li>
-                <li data-view="analysis"><span data-i18n="general_analysis">Analysis</span></li>
-                <li data-view="search"><span data-i18n="search">Search</span></li>
-                <li data-view="settings"><span data-i18n="settings">Settings</span></li>
-            </ul>
-            <div class="nav-footer">
-                <select id="langSelect" class="lang-select">
+
+            <div class="workflow-steps">
+                <div class="step-item active" data-step="1" onclick="goToStep(1)">
+                    <div class="step-number">1</div>
+                    <span>模型设置</span>
+                </div>
+                <div class="step-item" data-step="2" onclick="goToStep(2)">
+                    <div class="step-number">2</div>
+                    <span>抓取新闻</span>
+                </div>
+                <div class="step-item" data-step="3" onclick="goToStep(3)">
+                    <div class="step-number">3</div>
+                    <span>内容搜索</span>
+                </div>
+                <div class="step-item" data-step="4" onclick="goToStep(4)">
+                    <div class="step-number">4</div>
+                    <span>生成简报</span>
+                </div>
+                <div class="step-item" data-step="5" onclick="goToStep(5)">
+                    <div class="step-number">5</div>
+                    <span>TTS播报</span>
+                </div>
+            </div>
+
+            <div class="sidebar-footer">
+                <select id="langSelect" class="form-select">
                     {% for code, name in languages.items() %}
                     <option value="{{ code }}" {% if code == current_lang %}selected{% endif %}>{{ name }}</option>
                     {% endfor %}
@@ -30,193 +315,756 @@
             </div>
         </nav>
 
-        <main class="content">
-            <!-- Dashboard -->
-            <section id="view-dashboard" class="view active">
-                <h1 data-i18n="dashboard">Dashboard</h1>
-                <div class="stats-grid" id="statsGrid">
-                    <div class="stat-card">
-                        <div class="stat-number" id="statArticles">0</div>
-                        <div class="stat-label" data-i18n="total_articles">Total Articles</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number" id="statSources">0</div>
-                        <div class="stat-label" data-i18n="sources">Sources</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number" id="statLanguages">10</div>
-                        <div class="stat-label" data-i18n="language_label">Languages</div>
-                    </div>
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Step 1: Model Settings -->
+            <section id="step-1" class="step-content">
+                <div class="page-header">
+                    <h1 class="page-title">Step 1: 模型设置</h1>
+                    <p class="page-subtitle">配置AI模型和代理设置</p>
                 </div>
+
                 <div class="card">
-                    <h3>Quick Actions</h3>
-                    <div class="btn-group">
-                        <button class="btn btn-primary" onclick="switchView('news');startFetch()" data-i18n="fetch_news">Fetch News</button>
-                        <button class="btn btn-secondary" onclick="switchView('briefing')" data-i18n="news_briefing">Generate Briefing</button>
-                        <button class="btn btn-secondary" onclick="switchView('analysis')" data-i18n="general_analysis">Run Analysis</button>
+                    <h3 class="card-title">🤖 Ollama 模型配置</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Ollama 服务地址</label>
+                            <input type="text" id="ollamaUrl" class="form-input" value="{{ config.ollama_url }}">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">&nbsp;</label>
+                            <button class="btn btn-secondary" onclick="testOllama()">测试连接</button>
+                            <span id="ollamaStatus"></span>
+                        </div>
                     </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">聊天模型 (用于总结/翻译)</label>
+                            <select id="chatModel" class="form-select">
+                                <option value="">选择模型...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">嵌入模型 (用于语义搜索)</label>
+                            <select id="embedModel" class="form-select">
+                                <option value="">选择模型...</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button class="btn btn-secondary btn-sm" onclick="loadModels()">刷新模型列表</button>
+                </div>
+
+                <div class="card">
+                    <h3 class="card-title">🌐 代理设置</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">代理模式</label>
+                            <select id="proxyMode" class="form-select" onchange="updateProxyMode()">
+                                <option value="none" {% if config.proxy_mode == 'none' %}selected{% endif %}>不使用代理</option>
+                                <option value="system" {% if config.proxy_mode == 'system' %}selected{% endif %}>系统代理</option>
+                                <option value="manual" {% if config.proxy_mode == 'manual' %}selected{% endif %}>手动设置</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="manualProxy" class="form-row" {% if config.proxy_mode != 'manual' %}style="display:none"{% endif %}>
+                        <div class="form-group">
+                            <label class="form-label">HTTP代理</label>
+                            <input type="text" id="proxyHttp" class="form-input" value="{{ config.proxy_http }}" placeholder="127.0.0.1:7890">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">HTTPS代理</label>
+                            <input type="text" id="proxyHttps" class="form-input" value="{{ config.proxy_https }}" placeholder="127.0.0.1:7890">
+                        </div>
+                    </div>
+                    <div id="manualProxy2" class="form-row" {% if config.proxy_mode != 'manual' %}style="display:none"{% endif %}>
+                        <div class="form-group">
+                            <label class="form-label">SOCKS5代理 (可选)</label>
+                            <input type="text" id="proxySocks5" class="form-input" value="{{ config.proxy_socks5 or '' }}" placeholder="127.0.0.1:1080">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">&nbsp;</label>
+                            <button class="btn btn-secondary btn-sm" onclick="testProxy()">测试代理</button>
+                            <span id="proxyStatus"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="btn-group">
+                    <button class="btn btn-primary btn-lg" onclick="saveStep1()">保存并继续 →</button>
                 </div>
             </section>
 
-            <!-- News Browser -->
-            <section id="view-news" class="view">
-                <h1 data-i18n="fetch_news">News</h1>
-                <div class="toolbar">
-                    <select id="newsLang" class="input-sm">
-                        <option value="">All Languages</option>
+            <!-- Step 2: Fetch News -->
+            <section id="step-2" class="step-content hidden">
+                <div class="page-header">
+                    <h1 class="page-title">Step 2: 抓取新闻</h1>
+                    <p class="page-subtitle">选择语言来源，获取最新新闻</p>
+                </div>
+
+                <div class="card">
+                    <h3 class="card-title">🌍 选择新闻语言</h3>
+                    <p style="color: var(--text-secondary); margin-bottom: 15px;">勾选要抓取的新闻语言（可多选）</p>
+                    <div class="lang-grid" id="languageGrid">
                         {% for code, name in languages.items() %}
-                        <option value="{{ code }}">{{ name }}</option>
+                        <label class="lang-item" data-lang="{{ code }}">
+                            <input type="checkbox" value="{{ code }}">
+                            <span class="check"></span>
+                            <span>{{ name }}</span>
+                        </label>
                         {% endfor %}
-                    </select>
-                    <input type="date" id="newsDateFrom" class="input-sm">
-                    <input type="date" id="newsDateTo" class="input-sm">
-                    <button class="btn btn-primary btn-sm" onclick="loadNewsList()" data-i18n="search">Search</button>
-                    <button class="btn btn-secondary btn-sm" onclick="startFetch()" data-i18n="fetch_news">Fetch</button>
-                </div>
-                <div class="split-pane">
-                    <div class="list-pane" id="newsList"></div>
-                    <div class="detail-pane" id="newsDetail">
-                        <div class="placeholder" data-i18n="no_results">Select an article</div>
                     </div>
+                </div>
+
+                <div class="card">
+                    <h3 class="card-title">⚙️ 抓取设置</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">每个来源最大文章数</label>
+                            <input type="number" id="maxArticles" class="form-input" value="20" min="5" max="100">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">抓取方式</label>
+                            <select id="fetcher" class="form-select">
+                                <option value="requests">标准请求</option>
+                                <option value="curl">curl_cffi (模拟浏览器)</option>
+                                <option value="browser">浏览器模式</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3 class="card-title">📊 当前状态</h3>
+                    <div id="fetchStats" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 15px;">
+                        <div style="text-align: center;">
+                            <div style="font-size: 24px; font-weight: bold;" id="statTotal">0</div>
+                            <div style="color: var(--text-secondary); font-size: 12px;">总文章数</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 24px; font-weight: bold;" id="statSources">109</div>
+                            <div style="color: var(--text-secondary); font-size: 12px;">新闻来源</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 24px; font-weight: bold;" id="statLangs">10</div>
+                            <div style="color: var(--text-secondary); font-size: 12px;">支持语言</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 24px; font-weight: bold;" id="statIndexed">0</div>
+                            <div style="color: var(--text-secondary); font-size: 12px;">已索引</div>
+                        </div>
+                    </div>
+                    <div id="fetchLog" class="output-area" style="min-height: 100px; font-size: 12px;">准备就绪</div>
+                </div>
+
+                <div class="btn-group">
+                    <button class="btn btn-secondary" onclick="goToStep(1)">← 上一步</button>
+                    <button class="btn btn-primary" onclick="fetchNews()">📥 抓取新闻</button>
+                    <button class="btn btn-secondary" onclick="indexNews()">🔍 建立索引</button>
+                    <button class="btn btn-primary btn-lg" onclick="goToStep(3)">继续 →</button>
                 </div>
             </section>
 
-            <!-- Briefing -->
-            <section id="view-briefing" class="view">
-                <h1 data-i18n="news_briefing">News Briefing</h1>
-                <div class="toolbar">
-                    <select id="briefingType">
-                        <option value="daily" data-i18n="daily_briefing">Daily</option>
-                        <option value="weekly" data-i18n="weekly_briefing">Weekly</option>
-                    </select>
-                    <select id="briefingLang" class="input-sm">
-                        {% for code, name in languages.items() %}
-                        <option value="{{ code }}" {% if code == current_lang %}selected{% endif %}>{{ name }}</option>
-                        {% endfor %}
-                    </select>
-                    <button class="btn btn-primary btn-sm" onclick="generateBriefing()" data-i18n="generating_briefing">Generate</button>
+            <!-- Step 3: Content Search -->
+            <section id="step-3" class="step-content hidden">
+                <div class="page-header">
+                    <h1 class="page-title">Step 3: 内容搜索</h1>
+                    <p class="page-subtitle">搜索已抓取的新闻或网络内容</p>
                 </div>
-                <div class="card output-area" id="briefingOutput">
-                    <div class="placeholder" data-i18n="no_results">Click Generate to create a briefing</div>
+
+                <div class="card">
+                    <h3 class="card-title">🔍 搜索内容</h3>
+                    <div class="form-group">
+                        <input type="text" id="searchQuery" class="form-input" placeholder="输入关键词搜索..." style="font-size: 16px;">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">搜索类型</label>
+                            <select id="searchType" class="form-select">
+                                <option value="local">本地新闻 (已抓取)</option>
+                                <option value="web">网络搜索</option>
+                                <option value="both">两者都搜</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">搜索引擎</label>
+                            <select id="searchEngine" class="form-select">
+                                <option value="duckduckgo">DuckDuckGo</option>
+                                <option value="google">Google</option>
+                                <option value="bing">Bing</option>
+                                <option value="brave">Brave</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">结果数量</label>
+                            <select id="searchLimit" class="form-select">
+                                <option value="10">10条</option>
+                                <option value="20" selected>20条</option>
+                                <option value="50">50条</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" onclick="doSearch()">🔍 搜索</button>
+                </div>
+
+                <div class="card">
+                    <h3 class="card-title">📋 搜索结果</h3>
+                    <p style="color: var(--text-secondary); margin-bottom: 10px;">点击选择要加入简报的内容</p>
+                    <div class="news-list" id="searchResults">
+                        <div style="padding: 20px; text-align: center; color: var(--text-secondary);">
+                            输入关键词开始搜索
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3 class="card-title">📝 已选内容 (<span id="selectedCount">0</span> 条)</h3>
+                    <div class="news-list" id="selectedContent">
+                        <div style="padding: 20px; text-align: center; color: var(--text-secondary);">
+                            从上方结果中选择内容
+                        </div>
+                    </div>
+                </div>
+
+                <div class="btn-group">
+                    <button class="btn btn-secondary" onclick="goToStep(2)">← 上一步</button>
+                    <button class="btn btn-secondary" onclick="clearSelected()">清空选择</button>
+                    <button class="btn btn-primary btn-lg" onclick="goToStep(4)">生成简报 →</button>
                 </div>
             </section>
 
-            <!-- Analysis -->
-            <section id="view-analysis" class="view">
-                <h1 data-i18n="general_analysis">Analysis</h1>
-                <div class="toolbar">
-                    <select id="analysisScenario">
-                        <option value="general" data-i18n="general_analysis">General</option>
-                        <option value="investment" data-i18n="investment_analysis">Investment</option>
-                        <option value="immigration" data-i18n="immigration_analysis">Immigration</option>
-                        <option value="study_abroad" data-i18n="study_abroad_analysis">Study Abroad</option>
-                    </select>
-                    <input type="text" id="analysisQuery" class="input-lg" placeholder="Enter your analysis query...">
-                    <button class="btn btn-primary btn-sm" onclick="runAnalysis()" data-i18n="analyzing">Analyze</button>
+            <!-- Step 4: Generate Briefing -->
+            <section id="step-4" class="step-content hidden">
+                <div class="page-header">
+                    <h1 class="page-title">Step 4: 生成简报</h1>
+                    <p class="page-subtitle">AI总结已选内容，支持多语言输出</p>
                 </div>
-                <div class="card output-area" id="analysisOutput">
-                    <div class="placeholder">Enter a query and select a scenario</div>
+
+                <div class="card">
+                    <h3 class="card-title">📋 简报设置</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">输出语言</label>
+                            <select id="outputLanguage" class="form-select">
+                                {% for code, name in languages.items() %}
+                                <option value="{{ code }}" {% if code == current_lang %}selected{% endif %}>{{ name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">简报风格</label>
+                            <select id="briefingStyle" class="form-select">
+                                <option value="brief">简要概述</option>
+                                <option value="detailed">详细分析</option>
+                                <option value="bullet">要点列表</option>
+                                <option value="executive">执行摘要</option>
+                                <option value="story" selected>叙事风格 (适合TTS)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">自定义指令 (可选)</label>
+                        <input type="text" id="customInstruction" class="form-input" placeholder="例如：重点关注经济影响">
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3 class="card-title">📄 待处理内容</h3>
+                    <div id="contentToProcess" class="output-area" style="max-height: 200px; overflow-y: auto;">
+                        将显示已选择的内容摘要...
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3 class="card-title">✨ 生成的简报</h3>
+                    <div id="briefingOutput" class="output-area" style="min-height: 300px;">
+                        点击"生成简报"开始处理...
+                    </div>
+                </div>
+
+                <div class="btn-group">
+                    <button class="btn btn-secondary" onclick="goToStep(3)">← 上一步</button>
+                    <button class="btn btn-primary" onclick="generateBriefing()">✨ 生成简报</button>
+                    <button class="btn btn-secondary" onclick="exportBriefing()">📥 导出</button>
+                    <button class="btn btn-primary btn-lg" onclick="goToStep(5)">TTS播报 →</button>
                 </div>
             </section>
 
-            <!-- Search -->
-            <section id="view-search" class="view">
-                <h1 data-i18n="search">Search</h1>
-                <div class="toolbar">
-                    <input type="text" id="searchQuery" class="input-lg" placeholder="Search news...">
-                    <button class="btn btn-primary btn-sm" onclick="doSearch()" data-i18n="search">Search</button>
+            <!-- Step 5: TTS Playback -->
+            <section id="step-5" class="step-content hidden">
+                <div class="page-header">
+                    <h1 class="page-title">Step 5: TTS播报</h1>
+                    <p class="page-subtitle">选择语音，将简报转换为音频</p>
                 </div>
-                <div class="split-pane">
-                    <div class="list-pane" id="searchResults"></div>
-                    <div class="detail-pane" id="searchDetail">
-                        <div class="placeholder" data-i18n="no_results">No results</div>
-                    </div>
-                </div>
-            </section>
 
-            <!-- Settings -->
-            <section id="view-settings" class="view">
-                <h1 data-i18n="settings">Settings</h1>
-                <div class="settings-grid">
-                    <div class="card">
-                        <h3>Ollama</h3>
+                <div class="card">
+                    <h3 class="card-title">🔊 语音设置</h3>
+                    <div class="form-row">
                         <div class="form-group">
-                            <label data-i18n="ollama_url">Ollama URL</label>
-                            <input type="text" id="settOllamaUrl" value="{{ config.ollama_url }}">
-                        </div>
-                        <div class="form-group">
-                            <label>Chat Model</label>
-                            <select id="settChatModel">
-                                {% if config.chat_model %}
-                                <option value="{{ config.chat_model }}" selected>{{ config.chat_model }}</option>
-                                {% endif %}
+                            <label class="form-label">TTS引擎</label>
+                            <select id="ttsEngine" class="form-select" onchange="loadVoices()">
+                                <option value="edge-tts">Edge TTS (推荐)</option>
+                                <option value="gtts">Google TTS</option>
+                                <option value="pyttsx3">离线TTS</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label>Embedding Model</label>
-                            <select id="settEmbedModel">
-                                {% if config.embedding_model %}
-                                <option value="{{ config.embedding_model }}" selected>{{ config.embedding_model }}</option>
-                                {% endif %}
-                            </select>
-                        </div>
-                        <button class="btn btn-secondary btn-sm" onclick="testConnection()">Test Connection</button>
-                        <button class="btn btn-secondary btn-sm" onclick="loadModels()" style="margin-left:5px">Refresh Models</button>
-                    </div>
-                    <div class="card">
-                        <h3 data-i18n="proxy">Proxy</h3>
-                        <div class="form-group">
-                            <label>Mode</label>
-                            <select id="settProxyMode">
-                                <option value="none" {% if config.proxy_mode == 'none' %}selected{% endif %}>None</option>
-                                <option value="system" {% if config.proxy_mode == 'system' %}selected{% endif %}>System</option>
-                                <option value="manual" {% if config.proxy_mode == 'manual' %}selected{% endif %}>Manual</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>HTTP Proxy</label>
-                            <input type="text" id="settProxyHttp" value="{{ config.proxy_http }}">
-                        </div>
-                        <div class="form-group">
-                            <label>HTTPS Proxy</label>
-                            <input type="text" id="settProxyHttps" value="{{ config.proxy_https }}">
-                        </div>
-                    </div>
-                    <div class="card">
-                        <h3>Fetching</h3>
-                        <div class="form-group">
-                            <label>Default Fetcher</label>
-                            <select id="settFetcher">
-                                <option value="requests" {% if config.default_fetcher == 'requests' %}selected{% endif %}>Requests</option>
-                                <option value="curl" {% if config.default_fetcher == 'curl' %}selected{% endif %}>curl_cffi</option>
-                                <option value="browser" {% if config.default_fetcher == 'browser' %}selected{% endif %}>DrissionPage</option>
-                                <option value="playwright" {% if config.default_fetcher == 'playwright' %}selected{% endif %}>Playwright</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Fetch Delay (seconds)</label>
-                            <input type="number" id="settDelay" value="{{ config.fetch_delay }}" step="0.1" min="0.1">
+                            <label class="form-label">语速</label>
+                            <input type="range" id="ttsSpeed" min="0.5" max="2" step="0.1" value="1" style="width: 100%;">
+                            <span id="speedLabel">1.0x</span>
                         </div>
                     </div>
                 </div>
-                <div class="toolbar" style="margin-top:15px">
-                    <button class="btn btn-primary" onclick="saveSettings()" data-i18n="save">Save Settings</button>
+
+                <div class="card">
+                    <h3 class="card-title">🎤 选择语音</h3>
+                    <div class="voice-grid" id="voiceGrid">
+                        <div style="padding: 20px; text-align: center; color: var(--text-secondary);">
+                            加载语音列表...
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3 class="card-title">📝 待播报内容</h3>
+                    <textarea id="ttsContent" class="form-textarea" rows="8" placeholder="简报内容将显示在这里..."></textarea>
+                </div>
+
+                <div class="card">
+                    <h3 class="card-title">🎵 音频输出</h3>
+                    <audio id="audioPlayer" controls style="width: 100%;" controlsList="nodownload"></audio>
+                    <div class="status-bar" id="ttsStatus">准备就绪</div>
+                </div>
+
+                <div class="btn-group">
+                    <button class="btn btn-secondary" onclick="goToStep(4)">← 上一步</button>
+                    <button class="btn btn-primary" onclick="generateAudio()">🔊 生成音频</button>
+                    <button class="btn btn-secondary" onclick="downloadAudio()">📥 下载音频</button>
+                    <button class="btn btn-success btn-lg" onclick="startOver()">🔄 重新开始</button>
                 </div>
             </section>
         </main>
     </div>
 
     <script>
-        window.SERVER_CONFIG = {
-            translations: {{ translations | tojson }},
-            languages: {{ languages | tojson }},
-            currentLang: "{{ current_lang }}"
-        };
+        // Global state
+        let currentStep = 1;
+        let selectedItems = [];
+        let currentBriefing = '';
+        let currentAudioPath = '';
+
+        // Language grid toggle
+        document.querySelectorAll('.lang-item').forEach(item => {
+            item.addEventListener('click', () => {
+                item.classList.toggle('selected');
+            });
+        });
+
+        // TTS speed label
+        document.getElementById('ttsSpeed').addEventListener('input', function() {
+            document.getElementById('speedLabel').textContent = this.value + 'x';
+        });
+
+        // Navigation
+        function goToStep(step) {
+            document.querySelectorAll('.step-content').forEach(s => s.classList.add('hidden'));
+            document.getElementById('step-' + step).classList.remove('hidden');
+            
+            document.querySelectorAll('.step-item').forEach((item, i) => {
+                item.classList.remove('active');
+                if (i + 1 < step) item.classList.add('completed');
+                else item.classList.remove('completed');
+            });
+            document.querySelector(`[data-step="${step}"]`).classList.add('active');
+            
+            currentStep = step;
+            
+            // Load data for step
+            if (step === 2) loadStats();
+            if (step === 4) updateContentToProcess();
+            if (step === 5) {
+                document.getElementById('ttsContent').value = currentBriefing;
+                loadVoices();
+            }
+        }
+
+        // Step 1: Model settings
+        function testOllama() {
+            const url = document.getElementById('ollamaUrl').value;
+            fetch('/api/models?url=' + encodeURIComponent(url))
+                .then(r => r.json())
+                .then(data => {
+                    const status = document.getElementById('ollamaStatus');
+                    if (data.available) {
+                        status.innerHTML = '<span style="color: var(--success)">✓ 连接成功</span>';
+                    } else {
+                        status.innerHTML = '<span style="color: var(--danger)">✗ 连接失败</span>';
+                    }
+                });
+        }
+
+        function loadModels() {
+            const url = document.getElementById('ollamaUrl').value;
+            fetch('/api/models?url=' + encodeURIComponent(url))
+                .then(r => r.json())
+                .then(data => {
+                    if (data.available) {
+                        const chatSelect = document.getElementById('chatModel');
+                        const embedSelect = document.getElementById('embedModel');
+                        
+                        chatSelect.innerHTML = '<option value="">选择模型...</option>' +
+                            data.chat_models.map(m => `<option value="${m}">${m}</option>`).join('');
+                        embedSelect.innerHTML = '<option value="">选择模型...</option>' +
+                            data.embedding_models.map(m => `<option value="${m}">${m}</option>`).join('');
+                    }
+                });
+        }
+
+        function updateProxyMode() {
+            const mode = document.getElementById('proxyMode').value;
+            const show = mode === 'manual';
+            document.getElementById('manualProxy').style.display = show ? 'flex' : 'none';
+            document.getElementById('manualProxy2').style.display = show ? 'flex' : 'none';
+        }
+
+        function testProxy() {
+            document.getElementById('proxyStatus').textContent = '测试中...';
+            fetch('/api/proxy/test', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    mode: document.getElementById('proxyMode').value,
+                    http: document.getElementById('proxyHttp').value,
+                    https: document.getElementById('proxyHttps').value,
+                    socks5: document.getElementById('proxySocks5').value
+                })
+            })
+            .then(r => r.json())
+            .then(data => {
+                const status = document.getElementById('proxyStatus');
+                if (data.success) {
+                    status.innerHTML = `<span style="color: var(--success)">✓ ${data.response_time_ms}ms</span>`;
+                } else {
+                    status.innerHTML = `<span style="color: var(--danger)">✗ ${data.error}</span>`;
+                }
+            });
+        }
+
+        function saveStep1() {
+            fetch('/api/settings', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    ollama_url: document.getElementById('ollamaUrl').value,
+                    chat_model: document.getElementById('chatModel').value,
+                    embedding_model: document.getElementById('embedModel').value,
+                    proxy_mode: document.getElementById('proxyMode').value,
+                    proxy_http: document.getElementById('proxyHttp').value,
+                    proxy_https: document.getElementById('proxyHttps').value,
+                    proxy_socks5: document.getElementById('proxySocks5').value
+                })
+            })
+            .then(() => {
+                document.querySelector('[data-step="1"]').classList.add('completed');
+                goToStep(2);
+            });
+        }
+
+        // Step 2: Fetch news
+        function loadStats() {
+            fetch('/api/stats')
+                .then(r => r.json())
+                .then(data => {
+                    document.getElementById('statTotal').textContent = data.articles?.total || 0;
+                    document.getElementById('statSources').textContent = data.sources_count || 109;
+                    document.getElementById('statIndexed').textContent = data.indexed || 0;
+                });
+        }
+
+        function fetchNews() {
+            const langs = [];
+            document.querySelectorAll('.lang-item.selected').forEach(item => {
+                langs.push(item.dataset.lang);
+            });
+            
+            if (langs.length === 0) {
+                alert('请至少选择一种语言');
+                return;
+            }
+
+            const log = document.getElementById('fetchLog');
+            log.textContent = '开始抓取...\n';
+
+            langs.forEach(lang => {
+                log.textContent += `抓取 ${lang} 新闻...\n`;
+                fetch('/api/news/fetch', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        language: lang,
+                        max_articles: parseInt(document.getElementById('maxArticles').value),
+                        fetcher: document.getElementById('fetcher').value
+                    })
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        log.textContent += `${lang}: 抓取了 ${data.data.fetched} 篇文章\n`;
+                    } else {
+                        log.textContent += `${lang}: 错误 - ${data.error}\n`;
+                    }
+                    loadStats();
+                });
+            });
+        }
+
+        function indexNews() {
+            fetch('/api/index', { method: 'POST' })
+                .then(r => r.json())
+                .then(data => {
+                    document.getElementById('fetchLog').textContent += '索引完成\n';
+                    loadStats();
+                });
+        }
+
+        // Step 3: Search
+        function doSearch() {
+            const query = document.getElementById('searchQuery').value;
+            const type = document.getElementById('searchType').value;
+            
+            if (!query) return;
+
+            const resultsDiv = document.getElementById('searchResults');
+            resultsDiv.innerHTML = '<div style="padding: 20px; text-align: center;">搜索中...</div>';
+
+            if (type === 'local' || type === 'both') {
+                fetch('/api/search', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ query: query, top_k: 20 })
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        displayResults(data.data.results || [], 'local');
+                    }
+                });
+            }
+
+            if (type === 'web' || type === 'both') {
+                fetch('/api/web-search', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        query: query,
+                        engines: [document.getElementById('searchEngine').value],
+                        num_results: parseInt(document.getElementById('searchLimit').value)
+                    })
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        displayResults(data.data.results || [], 'web');
+                    }
+                });
+            }
+        }
+
+        function displayResults(results, type) {
+            const resultsDiv = document.getElementById('searchResults');
+            resultsDiv.innerHTML = '';
+
+            results.forEach((item, i) => {
+                const div = document.createElement('div');
+                div.className = 'news-item';
+                div.innerHTML = `
+                    <div class="news-title">${item.title || item.metadata?.title || '无标题'}</div>
+                    <div class="news-meta">${type === 'web' ? item.source : item.metadata?.website || ''} ${item.metadata?.date || ''}</div>
+                `;
+                div.onclick = () => toggleSelect(item, div);
+                resultsDiv.appendChild(div);
+            });
+        }
+
+        function toggleSelect(item, element) {
+            element.classList.toggle('selected');
+            
+            const index = selectedItems.findIndex(i => 
+                (i.title || i.metadata?.title) === (item.title || item.metadata?.title)
+            );
+            
+            if (index > -1) {
+                selectedItems.splice(index, 1);
+            } else {
+                selectedItems.push(item);
+            }
+            
+            updateSelectedList();
+        }
+
+        function updateSelectedList() {
+            const count = document.getElementById('selectedCount');
+            count.textContent = selectedItems.length;
+
+            const list = document.getElementById('selectedContent');
+            if (selectedItems.length === 0) {
+                list.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-secondary);">从上方结果中选择内容</div>';
+            } else {
+                list.innerHTML = selectedItems.map((item, i) => `
+                    <div class="news-item selected">
+                        <div class="news-title">${item.title || item.metadata?.title || '无标题'}</div>
+                        <div class="news-meta">${item.snippet?.substring(0, 100) || item.document?.substring(0, 100) || ''}...</div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function clearSelected() {
+            selectedItems = [];
+            document.querySelectorAll('.news-item.selected').forEach(el => el.classList.remove('selected'));
+            updateSelectedList();
+        }
+
+        // Step 4: Generate briefing
+        function updateContentToProcess() {
+            const div = document.getElementById('contentToProcess');
+            if (selectedItems.length === 0) {
+                div.textContent = '请返回上一步选择要总结的内容';
+            } else {
+                div.textContent = `已选择 ${selectedItems.length} 条内容:\n\n` +
+                    selectedItems.map((item, i) => 
+                        `${i+1}. ${item.title || item.metadata?.title || '无标题'}`
+                    ).join('\n');
+            }
+        }
+
+        function generateBriefing() {
+            if (selectedItems.length === 0) {
+                alert('请先选择要总结的内容');
+                return;
+            }
+
+            const output = document.getElementById('briefingOutput');
+            output.textContent = '正在生成简报...';
+
+            // Combine content
+            const content = selectedItems.map(item => {
+                return `标题: ${item.title || item.metadata?.title || ''}\n${item.snippet || item.document || ''}`;
+            }).join('\n\n---\n\n');
+
+            fetch('/api/summarize', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    content: content,
+                    target_language: document.getElementById('outputLanguage').value,
+                    style: document.getElementById('briefingStyle').value
+                })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    currentBriefing = data.data.summary;
+                    output.textContent = currentBriefing;
+                } else {
+                    output.textContent = '生成失败: ' + data.error;
+                }
+            });
+        }
+
+        function exportBriefing() {
+            if (!currentBriefing) return;
+            
+            const blob = new Blob([currentBriefing], { type: 'text/markdown' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'briefing_' + new Date().toISOString().slice(0, 10) + '.md';
+            a.click();
+        }
+
+        // Step 5: TTS
+        function loadVoices() {
+            const engine = document.getElementById('ttsEngine').value;
+            const lang = document.getElementById('outputLanguage').value;
+
+            fetch(`/api/tts/voices?engine=${engine}&language=${lang}`)
+                .then(r => r.json())
+                .then(data => {
+                    const grid = document.getElementById('voiceGrid');
+                    if (data.success && data.data.voices.length > 0) {
+                        grid.innerHTML = data.data.voices.map((v, i) => `
+                            <div class="voice-item ${i === 0 ? 'selected' : ''}" data-voice="${v.id}" onclick="selectVoice(this)">
+                                <div class="voice-name">${v.name}</div>
+                                <div class="voice-lang">${v.language} ${v.gender || ''}</div>
+                            </div>
+                        `).join('');
+                    } else {
+                        grid.innerHTML = '<div style="padding: 20px; text-align: center;">使用默认语音</div>';
+                    }
+                });
+        }
+
+        function selectVoice(element) {
+            document.querySelectorAll('.voice-item').forEach(el => el.classList.remove('selected'));
+            element.classList.add('selected');
+        }
+
+        function generateAudio() {
+            const text = document.getElementById('ttsContent').value;
+            if (!text) {
+                alert('没有可播报的内容');
+                return;
+            }
+
+            const status = document.getElementById('ttsStatus');
+            status.textContent = '正在生成音频...';
+
+            const voiceEl = document.querySelector('.voice-item.selected');
+            const voice = voiceEl ? voiceEl.dataset.voice : '';
+
+            fetch('/api/tts', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    text: text,
+                    engine: document.getElementById('ttsEngine').value,
+                    voice: voice,
+                    language: document.getElementById('outputLanguage').value,
+                    rate: parseFloat(document.getElementById('ttsSpeed').value)
+                })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    currentAudioPath = data.data.audio_path;
+                    const audio = document.getElementById('audioPlayer');
+                    audio.src = '/api/audio?path=' + encodeURIComponent(currentAudioPath);
+                    audio.play();
+                    status.innerHTML = `<span style="color: var(--success)">✓ 音频已生成，时长: ${data.data.duration.toFixed(1)}秒</span>`;
+                } else {
+                    status.innerHTML = `<span style="color: var(--danger)">✗ ${data.error}</span>`;
+                }
+            });
+        }
+
+        function downloadAudio() {
+            if (!currentAudioPath) return;
+            const a = document.createElement('a');
+            a.href = '/api/audio?path=' + encodeURIComponent(currentAudioPath);
+            a.download = 'briefing_' + new Date().toISOString().slice(0, 10) + '.mp3';
+            a.click();
+        }
+
+        function startOver() {
+            selectedItems = [];
+            currentBriefing = '';
+            currentAudioPath = '';
+            goToStep(1);
+        }
+
+        // Initialize
+        loadModels();
+        loadStats();
     </script>
-    <script src="{{ url_for('static', filename='js/i18n.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/news.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/briefing.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/analysis.js') }}"></script>
 </body>
 </html>

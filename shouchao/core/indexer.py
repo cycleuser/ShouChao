@@ -242,6 +242,11 @@ class NewsIndexer:
         except Exception:
             return {}
 
+    def get_document_count(self, collection: str = "shouchao_news") -> int:
+        """Get total number of indexed documents."""
+        stats = self.get_stats(collection)
+        return stats.get("count", 0)
+
 
 # ---------------------------------------------------------------------------
 # Minimal ChromaDB wrapper (GangDan-compatible interface)
