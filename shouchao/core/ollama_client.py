@@ -3,33 +3,44 @@ Ollama API client for ShouChao.
 
 Provides embedding generation and chat completion via Ollama.
 Adapted from GangDan's ollama_client pattern.
+
+IMPORTANT: Ollama is a local service, so we explicitly disable proxy
+to avoid issues when system proxy is configured.
 """
 
 import json
 import logging
+import os
 from typing import Optional, Iterator
 
 import requests
 
 logger = logging.getLogger(__name__)
 
-# Patterns to identify embedding models
-_EMBED_PATTERNS = (
+_PATTERNS = (
     "embed", "nomic-embed", "bge-", "e5-", "gte-",
     "instructor", "sentence", "all-minilm",
 )
+
+DEFAULT_TIMEOUT = 300  # 5 minutes for large models
 
 
 class OllamaClient:
     """Client for Ollama API (local LLM inference)."""
 
-    def __init__(self, api_url: str = "http://localhost:11434"):
+    def __init__(self, api_url: str = "http://localhost:11434", timeout: int = DEFAULT_TIMEOUT):
         self.api_url = api_url.rstrip("/")
+        self._timeout = timeout
+        self._session = requests.Session()
+        self._session.trust_env = False
 
     def is_available(self) -> bool:
         """Check if Ollama is running."""
         try:
-            resp = requests.get(f"{self.api_url}/api/tags", timeout=5)
+            resp = self._session.get(
+                f"{self.api_url}/api/tags",
+                timeout=10,
+            )
             return resp.status_code == 200
         except requests.exceptions.ConnectionError:
             logger.debug("Ollama not running at %s", self.api_url)
@@ -41,7 +52,10 @@ class OllamaClient:
     def get_models(self) -> list[dict]:
         """List all available models."""
         try:
-            resp = requests.get(f"{self.api_url}/api/tags", timeout=10)
+            resp = self._session.get(
+                f"{self.api_url}/api/tags",
+                timeout=30,
+            )
             resp.raise_for_status()
             return resp.json().get("models", [])
         except Exception as e:
@@ -54,7 +68,7 @@ class OllamaClient:
         results = []
         for m in models:
             name = m.get("name", "").lower()
-            if any(p in name for p in _EMBED_PATTERNS):
+            if any(p in name for p in _PATTERNS):
                 results.append(m["name"])
         return results
 
@@ -65,28 +79,22 @@ class OllamaClient:
         return [m["name"] for m in models if m["name"] not in embed_set]
 
     def embed(self, text: str, model: str) -> Optional[list[float]]:
-        """Generate embedding for text.
-
-        Returns:
-            List of floats (embedding vector) or None on error.
-        """
+        """Generate embedding for text."""
         try:
-            # Try new API format first (/api/embeddings)
-            resp = requests.post(
+            resp = self._session.post(
                 f"{self.api_url}/api/embeddings",
                 json={"model": model, "prompt": text},
-                timeout=60,
+                timeout=self._timeout,
             )
             if resp.status_code == 200:
                 data = resp.json()
                 embedding = data.get("embedding")
                 if embedding:
                     return embedding
-            # Fallback to old API format (/api/embed with "input")
-            resp = requests.post(
+            resp = self._session.post(
                 f"{self.api_url}/api/embed",
                 json={"model": model, "input": text},
-                timeout=60,
+                timeout=self._timeout,
             )
             resp.raise_for_status()
             data = resp.json()
@@ -105,11 +113,11 @@ class OllamaClient:
     ) -> Iterator[str]:
         """Streaming chat completion. Yields text chunks."""
         try:
-            resp = requests.post(
+            resp = self._session.post(
                 f"{self.api_url}/api/chat",
                 json={"model": model, "messages": messages, "stream": True},
                 stream=True,
-                timeout=120,
+                timeout=self._timeout,
             )
             resp.raise_for_status()
             for line in resp.iter_lines():
@@ -135,13 +143,22 @@ class OllamaClient:
     ) -> str:
         """Non-streaming chat completion. Returns full response."""
         try:
-            resp = requests.post(
+            logger.info("Calling Ollama chat API with model: %s", model)
+            resp = self._session.post(
                 f"{self.api_url}/api/chat",
                 json={"model": model, "messages": messages, "stream": False},
-                timeout=120,
+                timeout=self._timeout,
             )
             resp.raise_for_status()
-            return resp.json().get("message", {}).get("content", "")
+            result = resp.json().get("message", {}).get("content", "")
+            logger.info("Ollama response length: %d chars", len(result))
+            return result
+        except requests.exceptions.Timeout:
+            logger.error("Ollama request timed out after %d seconds", self._timeout)
+            return f"[Error: Request timed out. Try using a smaller/faster model.]"
+        except requests.exceptions.ConnectionError:
+            logger.error("Cannot connect to Ollama at %s", self.api_url)
+            return f"[Error: Cannot connect to Ollama. Is it running?]"
         except Exception as e:
             logger.error("Chat complete failed: %s", e)
             return f"[Error: {e}]"

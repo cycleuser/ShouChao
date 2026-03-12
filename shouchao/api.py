@@ -651,6 +651,7 @@ def generate_briefing(
     language: Optional[str] = None,
     categories: Optional[list[str]] = None,
     date: Optional[str] = None,
+    show_source: bool = False,
 ) -> ToolResult:
     """Generate a news briefing.
 
@@ -659,6 +660,7 @@ def generate_briefing(
         language: Output language code.
         categories: Filter by category tags.
         date: Target date (YYYY-MM-DD). Default: today.
+        show_source: Whether to include source attribution in the briefing.
     """
     try:
         from shouchao import __version__
@@ -675,18 +677,68 @@ def generate_briefing(
         generator = BriefingGenerator(ollama, indexer, storage)
 
         if briefing_type == "weekly":
-            chunks = list(generator.generate_weekly(date, language))
+            chunks = list(generator.generate_weekly(week_start=date, language=language, show_source=show_source))
         elif briefing_type == "domain" and categories:
             chunks = list(generator.generate_domain(
-                categories[0], date_from=date, language=language,
+                categories[0], date_from=date, language=language, show_source=show_source,
             ))
         else:
-            chunks = list(generator.generate_daily(date, language, categories))
+            chunks = list(generator.generate_daily(date, language, categories, show_source))
 
         content = "".join(chunks)
         return ToolResult(
             success=True,
             data={"content": content, "type": briefing_type},
+            metadata={"version": __version__},
+        )
+    except Exception as e:
+        from shouchao import __version__
+        return ToolResult(
+            success=False, error=str(e),
+            metadata={"version": __version__},
+        )
+
+
+def generate_briefing_from_articles(
+    *,
+    article_paths: list[str],
+    language: str = "zh",
+    show_source: bool = True,
+    title: Optional[str] = None,
+) -> ToolResult:
+    """Generate a briefing from selected articles.
+
+    Args:
+        article_paths: List of file paths to selected articles.
+        language: Output language code.
+        show_source: Whether to include source attribution.
+        title: Optional title for the briefing.
+    """
+    try:
+        from shouchao import __version__
+        from shouchao.core.config import CONFIG, load_config
+        from shouchao.core.ollama_client import OllamaClient
+        from shouchao.core.indexer import NewsIndexer
+        from shouchao.core.storage import ArticleStorage
+        from shouchao.core.briefing import BriefingGenerator
+
+        load_config()
+        ollama = OllamaClient(CONFIG.ollama_url)
+        indexer = NewsIndexer(ollama)
+        storage = ArticleStorage()
+        generator = BriefingGenerator(ollama, indexer, storage)
+
+        chunks = list(generator.generate_from_articles(
+            article_paths=article_paths,
+            language=language,
+            show_source=show_source,
+            title=title,
+        ))
+
+        content = "".join(chunks)
+        return ToolResult(
+            success=True,
+            data={"content": content, "article_count": len(article_paths)},
             metadata={"version": __version__},
         )
     except Exception as e:

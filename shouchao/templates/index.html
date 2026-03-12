@@ -19,8 +19,7 @@
             --text-primary: #f1f5f9;
             --text-secondary: #94a3b8;
             --border-color: #334155;
-            --radius: 12px;
-            --transition: all 0.2s ease;
+            --radius: 8px;
         }
 
         [data-theme="light"] {
@@ -35,243 +34,243 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background: var(--bg-dark);
             color: var(--text-primary);
-            line-height: 1.6;
+            line-height: 1.5;
             min-height: 100vh;
         }
 
         .app-container { display: flex; min-height: 100vh; }
 
-        /* Sidebar */
         .sidebar {
-            width: 240px;
+            width: 200px;
+            min-width: 200px;
             background: var(--bg-card);
             border-right: 1px solid var(--border-color);
             position: fixed;
+            top: 0; left: 0;
             height: 100vh;
             display: flex;
             flex-direction: column;
+            z-index: 100;
         }
 
-        .sidebar-header { padding: 20px; border-bottom: 1px solid var(--border-color); }
-
+        .sidebar-header { padding: 16px; border-bottom: 1px solid var(--border-color); }
         .logo { display: flex; align-items: center; gap: 10px; }
         .logo-icon {
-            width: 36px; height: 36px;
+            width: 32px; height: 32px;
             background: linear-gradient(135deg, var(--primary), var(--primary-light));
             border-radius: 8px;
             display: flex; align-items: center; justify-content: center;
-            color: white; font-weight: bold;
+            color: white; font-weight: bold; font-size: 14px;
         }
-        .logo-text h2 { font-size: 18px; }
+        .logo-text h2 { font-size: 16px; }
         .logo-text span { font-size: 11px; color: var(--text-secondary); }
 
-        .workflow-steps { padding: 15px 10px; flex: 1; }
+        .workflow-steps { padding: 12px 8px; flex: 1; overflow-y: auto; }
 
         .step-item {
-            display: flex; align-items: center; gap: 12px;
-            padding: 12px 15px; margin: 3px 0;
-            border-radius: 8px; cursor: pointer;
-            color: var(--text-secondary);
-            transition: var(--transition);
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px 12px; margin: 2px 0;
+            border-radius: 6px; cursor: pointer;
+            color: var(--text-secondary); font-size: 13px;
         }
         .step-item:hover { background: var(--bg-input); color: var(--text-primary); }
         .step-item.active { background: var(--primary); color: white; }
-        .step-item.completed { color: var(--success); }
+        .step-item.completed .step-number { background: var(--success); color: white; }
+
         .step-number {
-            width: 24px; height: 24px;
+            width: 20px; height: 20px;
             border-radius: 50%;
             background: var(--bg-input);
             display: flex; align-items: center; justify-content: center;
-            font-size: 12px; font-weight: 600;
+            font-size: 11px; font-weight: 600; flex-shrink: 0;
         }
         .step-item.active .step-number { background: rgba(255,255,255,0.2); }
-        .step-item.completed .step-number { background: var(--success); color: white; }
 
-        .sidebar-footer { padding: 15px; border-top: 1px solid var(--border-color); }
+        .sidebar-footer { padding: 12px; border-top: 1px solid var(--border-color); }
 
-        /* Main Content */
-        .main-content { flex: 1; margin-left: 240px; padding: 20px; }
+        .main-content {
+            margin-left: 200px;
+            padding: 20px;
+            width: calc(100% - 200px);
+            min-height: 100vh;
+        }
 
         .page-header { margin-bottom: 20px; }
-        .page-title { font-size: 24px; font-weight: 600; }
-        .page-subtitle { color: var(--text-secondary); margin-top: 5px; }
+        .page-title { font-size: 22px; font-weight: 600; }
+        .page-subtitle { color: var(--text-secondary); font-size: 13px; margin-top: 4px; }
 
-        /* Cards */
         .card {
             background: var(--bg-card);
             border: 1px solid var(--border-color);
             border-radius: var(--radius);
-            padding: 20px;
-            margin-bottom: 15px;
+            padding: 16px;
+            margin-bottom: 12px;
         }
-        .card-title { font-size: 16px; font-weight: 600; margin-bottom: 15px; }
+        .card-title { font-size: 14px; font-weight: 600; margin-bottom: 12px; }
 
-        /* Form Elements */
-        .form-group { margin-bottom: 15px; }
-        .form-label { display: block; margin-bottom: 6px; font-size: 13px; color: var(--text-secondary); }
+        .form-group { margin-bottom: 12px; }
+        .form-label { display: block; margin-bottom: 4px; font-size: 12px; color: var(--text-secondary); }
         .form-input, .form-select, .form-textarea {
-            width: 100%; padding: 10px 12px;
+            width: 100%; padding: 8px 10px;
             background: var(--bg-input);
             border: 1px solid var(--border-color);
-            border-radius: 8px;
-            color: var(--text-primary);
-            font-size: 14px;
+            border-radius: 6px;
+            color: var(--text-primary); font-size: 13px;
         }
-        .form-input:focus, .form-select:focus, .form-textarea:focus {
-            outline: none; border-color: var(--primary);
-        }
-        .form-textarea { resize: vertical; min-height: 100px; }
-
-        .form-row { display: flex; gap: 15px; }
+        .form-input:focus, .form-select:focus { outline: none; border-color: var(--primary); }
+        .form-textarea { resize: vertical; min-height: 80px; font-family: inherit; }
+        .form-row { display: flex; gap: 12px; }
         .form-row .form-group { flex: 1; }
 
-        /* Buttons */
+        .checkbox-group { display: flex; align-items: center; gap: 8px; padding: 6px 0; }
+        .checkbox-group input { width: 16px; height: 16px; accent-color: var(--primary); }
+        .checkbox-group label { font-size: 13px; cursor: pointer; }
+
         .btn {
-            display: inline-flex; align-items: center; gap: 8px;
-            padding: 10px 20px;
-            border-radius: 8px;
-            border: none; font-size: 14px; font-weight: 500;
-            cursor: pointer; transition: var(--transition);
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 8px 16px; border-radius: 6px; border: none;
+            font-size: 13px; font-weight: 500; cursor: pointer;
+            transition: background 0.2s; white-space: nowrap;
         }
         .btn-primary { background: var(--primary); color: white; }
         .btn-primary:hover { background: var(--primary-dark); }
         .btn-secondary { background: var(--bg-input); color: var(--text-primary); border: 1px solid var(--border-color); }
         .btn-secondary:hover { background: var(--border-color); }
         .btn-success { background: var(--success); color: white; }
-        .btn-lg { padding: 14px 28px; font-size: 15px; }
-        .btn-sm { padding: 6px 12px; font-size: 13px; }
+        .btn-warning { background: var(--warning); color: white; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-sm { padding: 6px 12px; font-size: 12px; }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .btn-group { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
 
-        .btn-group { display: flex; gap: 10px; flex-wrap: wrap; }
-
-        /* Language Grid */
-        .lang-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-            gap: 8px;
+        /* 文章列表 */
+        .article-list {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
         }
-        .lang-item {
-            display: flex; align-items: center; gap: 8px;
+        .article-item {
+            display: flex; align-items: flex-start; gap: 10px;
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+        }
+        .article-item:last-child { border-bottom: none; }
+        .article-item:hover { background: var(--bg-input); }
+        .article-item.selected { background: rgba(99, 102, 241, 0.1); }
+        .article-checkbox { width: 18px; height: 18px; accent-color: var(--primary); margin-top: 2px; }
+        .article-info { flex: 1; min-width: 0; }
+        .article-title { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .article-meta { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+
+        .stats-row {
+            display: flex; gap: 12px;
+            padding: 12px;
+            background: var(--bg-input);
+            border-radius: 6px;
+            margin-bottom: 12px;
+        }
+        .stat-item { text-align: center; }
+        .stat-value { font-size: 18px; font-weight: 700; }
+        .stat-label { font-size: 11px; color: var(--text-secondary); }
+
+        .briefing-output {
+            background: var(--bg-input);
+            border-radius: 6px;
+            padding: 12px;
+            min-height: 200px;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .progress-log {
+            background: var(--bg-input);
+            border-radius: 6px;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 11px;
+            max-height: 100px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+
+        .status-bar {
             padding: 8px 12px;
             background: var(--bg-input);
             border-radius: 6px;
-            cursor: pointer;
-            border: 2px solid transparent;
-            transition: var(--transition);
-        }
-        .lang-item:hover { border-color: var(--primary); }
-        .lang-item.selected { border-color: var(--primary); background: rgba(99, 102, 241, 0.15); }
-        .lang-item input { display: none; }
-        .lang-item .check {
-            width: 18px; height: 18px;
-            border: 2px solid var(--border-color);
-            border-radius: 4px;
-            display: flex; align-items: center; justify-content: center;
-        }
-        .lang-item.selected .check { background: var(--primary); border-color: var(--primary); }
-        .lang-item.selected .check::after {
-            content: "✓"; color: white; font-size: 12px;
-        }
-
-        /* Progress Steps */
-        .progress-bar {
-            display: flex; align-items: center;
-            margin-bottom: 30px;
-            padding: 20px 0;
-        }
-        .progress-step {
-            flex: 1; text-align: center;
-            position: relative;
-        }
-        .progress-step::after {
-            content: "";
-            position: absolute;
-            top: 15px; left: 50%;
-            width: 100%; height: 2px;
-            background: var(--border-color);
-        }
-        .progress-step:last-child::after { display: none; }
-        .progress-step.active::after { background: var(--primary); }
-        .progress-circle {
-            width: 32px; height: 32px;
-            border-radius: 50%;
-            background: var(--bg-input);
-            border: 2px solid var(--border-color);
-            display: inline-flex; align-items: center; justify-content: center;
-            position: relative; z-index: 1;
-        }
-        .progress-step.active .progress-circle { border-color: var(--primary); color: var(--primary); }
-        .progress-step.completed .progress-circle { background: var(--success); border-color: var(--success); color: white; }
-        .progress-label { font-size: 12px; margin-top: 8px; color: var(--text-secondary); }
-        .progress-step.active .progress-label { color: var(--primary); font-weight: 500; }
-
-        /* News List */
-        .news-list { max-height: 400px; overflow-y: auto; }
-        .news-item {
-            padding: 12px;
-            border-bottom: 1px solid var(--border-color);
-            cursor: pointer;
-            transition: var(--transition);
-        }
-        .news-item:hover { background: var(--bg-input); }
-        .news-item.selected { background: rgba(99, 102, 241, 0.1); border-left: 3px solid var(--primary); }
-        .news-title { font-weight: 500; margin-bottom: 4px; }
-        .news-meta { font-size: 12px; color: var(--text-secondary); }
-
-        /* Output Area */
-        .output-area {
-            background: var(--bg-input);
-            border-radius: 8px;
-            padding: 15px;
-            min-height: 200px;
-            white-space: pre-wrap;
-            font-size: 14px;
-        }
-
-        /* Voice Selection */
-        .voice-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 10px;
-        }
-        .voice-item {
-            padding: 12px;
-            background: var(--bg-input);
-            border-radius: 8px;
-            cursor: pointer;
-            border: 2px solid transparent;
-        }
-        .voice-item:hover { border-color: var(--primary); }
-        .voice-item.selected { border-color: var(--primary); background: rgba(99, 102, 241, 0.15); }
-        .voice-name { font-weight: 500; }
-        .voice-lang { font-size: 12px; color: var(--text-secondary); }
-
-        /* Status */
-        .status-bar {
-            padding: 10px 15px;
-            background: var(--bg-input);
-            border-radius: 8px;
-            margin-top: 15px;
+            margin-top: 8px;
+            font-size: 12px;
         }
         .status-success { color: var(--success); }
         .status-error { color: var(--danger); }
         .status-warning { color: var(--warning); }
 
-        /* Hidden */
+        .audio-player { width: 100%; margin-top: 10px; }
         .hidden { display: none !important; }
-
-        /* Responsive */
-        @media (max-width: 900px) {
-            .sidebar { transform: translateX(-100%); }
-            .main-content { margin-left: 0; }
+        .loading::after {
+            content: "";
+            display: inline-block;
+            width: 12px; height: 12px;
+            border: 2px solid var(--border-color);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 6px;
         }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .lang-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+            gap: 6px;
+        }
+        .lang-item {
+            display: flex; align-items: center; gap: 6px;
+            padding: 6px 8px;
+            background: var(--bg-input);
+            border-radius: 4px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            font-size: 12px;
+        }
+        .lang-item:hover { border-color: var(--primary); }
+        .lang-item.selected { border-color: var(--primary); background: rgba(99, 102, 241, 0.15); }
+        .lang-item input { display: none; }
+        .lang-check {
+            width: 14px; height: 14px;
+            border: 2px solid var(--border-color);
+            border-radius: 3px;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .lang-item.selected .lang-check { background: var(--primary); border-color: var(--primary); }
+        .lang-item.selected .lang-check::after { content: "✓"; color: white; font-size: 9px; }
+
+        .pagination {
+            display: flex; gap: 4px; margin-top: 10px; justify-content: center;
+        }
+        .page-btn {
+            padding: 4px 10px; font-size: 12px;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-primary);
+            cursor: pointer;
+        }
+        .page-btn:hover { background: var(--border-color); }
+        .page-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+        .page-btn:disabled { opacity: 0.5; cursor: not-allowed; }
     </style>
 </head>
 <body>
     <div class="app-container">
-        <!-- Sidebar -->
         <nav class="sidebar">
             <div class="sidebar-header">
                 <div class="logo">
@@ -294,7 +293,7 @@
                 </div>
                 <div class="step-item" data-step="3" onclick="goToStep(3)">
                     <div class="step-number">3</div>
-                    <span>内容搜索</span>
+                    <span>选择新闻</span>
                 </div>
                 <div class="step-item" data-step="4" onclick="goToStep(4)">
                     <div class="step-number">4</div>
@@ -307,7 +306,7 @@
             </div>
 
             <div class="sidebar-footer">
-                <select id="langSelect" class="form-select">
+                <select id="langSelect" class="form-select" style="font-size: 12px;">
                     {% for code, name in languages.items() %}
                     <option value="{{ code }}" {% if code == current_lang %}selected{% endif %}>{{ name }}</option>
                     {% endfor %}
@@ -315,47 +314,41 @@
             </div>
         </nav>
 
-        <!-- Main Content -->
         <main class="main-content">
             <!-- Step 1: Model Settings -->
             <section id="step-1" class="step-content">
                 <div class="page-header">
                     <h1 class="page-title">Step 1: 模型设置</h1>
-                    <p class="page-subtitle">配置AI模型和代理设置</p>
+                    <p class="page-subtitle">配置 Ollama 模型 (本地服务，无需代理)</p>
                 </div>
 
                 <div class="card">
-                    <h3 class="card-title">🤖 Ollama 模型配置</h3>
+                    <h3 class="card-title">Ollama 配置</h3>
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label">Ollama 服务地址</label>
+                            <label class="form-label">服务地址</label>
                             <input type="text" id="ollamaUrl" class="form-input" value="{{ config.ollama_url }}">
                         </div>
-                        <div class="form-group">
-                            <label class="form-label">&nbsp;</label>
-                            <button class="btn btn-secondary" onclick="testOllama()">测试连接</button>
-                            <span id="ollamaStatus"></span>
+                        <div class="form-group" style="flex: 0 0 auto; padding-top: 20px;">
+                            <button class="btn btn-secondary btn-sm" onclick="testOllama()">测试</button>
+                            <span id="ollamaStatus" style="margin-left: 8px; font-size: 12px;"></span>
                         </div>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label">聊天模型 (用于总结/翻译)</label>
-                            <select id="chatModel" class="form-select">
-                                <option value="">选择模型...</option>
-                            </select>
+                            <label class="form-label">聊天模型</label>
+                            <select id="chatModel" class="form-select"><option value="">加载中...</option></select>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">嵌入模型 (用于语义搜索)</label>
-                            <select id="embedModel" class="form-select">
-                                <option value="">选择模型...</option>
-                            </select>
+                            <label class="form-label">嵌入模型</label>
+                            <select id="embedModel" class="form-select"><option value="">加载中...</option></select>
                         </div>
                     </div>
-                    <button class="btn btn-secondary btn-sm" onclick="loadModels()">刷新模型列表</button>
+                    <button class="btn btn-secondary btn-sm" onclick="loadModels()">刷新模型</button>
                 </div>
 
                 <div class="card">
-                    <h3 class="card-title">🌐 代理设置</h3>
+                    <h3 class="card-title">代理设置 (仅用于网络获取)</h3>
                     <div class="form-row">
                         <div class="form-group">
                             <label class="form-label">代理模式</label>
@@ -366,31 +359,16 @@
                             </select>
                         </div>
                     </div>
-                    <div id="manualProxy" class="form-row" {% if config.proxy_mode != 'manual' %}style="display:none"{% endif %}>
+                    <div id="proxyManual" class="form-row" {% if config.proxy_mode != 'manual' %}style="display:none"{% endif %}>
                         <div class="form-group">
-                            <label class="form-label">HTTP代理</label>
+                            <label class="form-label">HTTP/HTTPS</label>
                             <input type="text" id="proxyHttp" class="form-input" value="{{ config.proxy_http }}" placeholder="127.0.0.1:7890">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">HTTPS代理</label>
-                            <input type="text" id="proxyHttps" class="form-input" value="{{ config.proxy_https }}" placeholder="127.0.0.1:7890">
-                        </div>
-                    </div>
-                    <div id="manualProxy2" class="form-row" {% if config.proxy_mode != 'manual' %}style="display:none"{% endif %}>
-                        <div class="form-group">
-                            <label class="form-label">SOCKS5代理 (可选)</label>
-                            <input type="text" id="proxySocks5" class="form-input" value="{{ config.proxy_socks5 or '' }}" placeholder="127.0.0.1:1080">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">&nbsp;</label>
-                            <button class="btn btn-secondary btn-sm" onclick="testProxy()">测试代理</button>
-                            <span id="proxyStatus"></span>
                         </div>
                     </div>
                 </div>
 
                 <div class="btn-group">
-                    <button class="btn btn-primary btn-lg" onclick="saveStep1()">保存并继续 →</button>
+                    <button class="btn btn-primary" onclick="saveAndNext(2)">保存并继续</button>
                 </div>
             </section>
 
@@ -398,137 +376,116 @@
             <section id="step-2" class="step-content hidden">
                 <div class="page-header">
                     <h1 class="page-title">Step 2: 抓取新闻</h1>
-                    <p class="page-subtitle">选择语言来源，获取最新新闻</p>
+                    <p class="page-subtitle">可选步骤。如果已有新闻库，可直接跳到下一步</p>
                 </div>
 
                 <div class="card">
-                    <h3 class="card-title">🌍 选择新闻语言</h3>
-                    <p style="color: var(--text-secondary); margin-bottom: 15px;">勾选要抓取的新闻语言（可多选）</p>
-                    <div class="lang-grid" id="languageGrid">
+                    <h3 class="card-title">选择语言</h3>
+                    <div class="lang-grid" id="langGrid">
                         {% for code, name in languages.items() %}
-                        <label class="lang-item" data-lang="{{ code }}">
-                            <input type="checkbox" value="{{ code }}">
-                            <span class="check"></span>
+                        <label class="lang-item" data-lang="{{ code }}" onclick="toggleLang(this)">
+                            <span class="lang-check"></span>
                             <span>{{ name }}</span>
                         </label>
                         {% endfor %}
                     </div>
+                    <div style="margin-top: 8px;">
+                        <button class="btn btn-secondary btn-sm" onclick="selectAllLangs()">全选</button>
+                        <button class="btn btn-secondary btn-sm" onclick="clearAllLangs()">清除</button>
+                    </div>
                 </div>
 
                 <div class="card">
-                    <h3 class="card-title">⚙️ 抓取设置</h3>
+                    <h3 class="card-title">抓取设置</h3>
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label">每个来源最大文章数</label>
+                            <label class="form-label">每源最大文章数</label>
                             <input type="number" id="maxArticles" class="form-input" value="20" min="5" max="100">
                         </div>
                         <div class="form-group">
                             <label class="form-label">抓取方式</label>
                             <select id="fetcher" class="form-select">
                                 <option value="requests">标准请求</option>
-                                <option value="curl">curl_cffi (模拟浏览器)</option>
-                                <option value="browser">浏览器模式</option>
                             </select>
                         </div>
                     </div>
                 </div>
 
                 <div class="card">
-                    <h3 class="card-title">📊 当前状态</h3>
-                    <div id="fetchStats" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 15px;">
-                        <div style="text-align: center;">
-                            <div style="font-size: 24px; font-weight: bold;" id="statTotal">0</div>
-                            <div style="color: var(--text-secondary); font-size: 12px;">总文章数</div>
+                    <h3 class="card-title">当前状态</h3>
+                    <div class="stats-row">
+                        <div class="stat-item">
+                            <div class="stat-value" id="statArticles">0</div>
+                            <div class="stat-label">文章</div>
                         </div>
-                        <div style="text-align: center;">
-                            <div style="font-size: 24px; font-weight: bold;" id="statSources">109</div>
-                            <div style="color: var(--text-secondary); font-size: 12px;">新闻来源</div>
-                        </div>
-                        <div style="text-align: center;">
-                            <div style="font-size: 24px; font-weight: bold;" id="statLangs">10</div>
-                            <div style="color: var(--text-secondary); font-size: 12px;">支持语言</div>
-                        </div>
-                        <div style="text-align: center;">
-                            <div style="font-size: 24px; font-weight: bold;" id="statIndexed">0</div>
-                            <div style="color: var(--text-secondary); font-size: 12px;">已索引</div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="statSources">109</div>
+                            <div class="stat-label">来源</div>
                         </div>
                     </div>
-                    <div id="fetchLog" class="output-area" style="min-height: 100px; font-size: 12px;">准备就绪</div>
+                    <div class="progress-log" id="fetchLog">准备就绪</div>
                 </div>
 
                 <div class="btn-group">
-                    <button class="btn btn-secondary" onclick="goToStep(1)">← 上一步</button>
-                    <button class="btn btn-primary" onclick="fetchNews()">📥 抓取新闻</button>
-                    <button class="btn btn-secondary" onclick="indexNews()">🔍 建立索引</button>
-                    <button class="btn btn-primary btn-lg" onclick="goToStep(3)">继续 →</button>
+                    <button class="btn btn-secondary" onclick="goToStep(1)">上一步</button>
+                    <button class="btn btn-primary" id="fetchBtn" onclick="startFetch()">开始抓取</button>
+                    <button class="btn btn-warning" onclick="goToStep(3)">跳过，使用已有新闻</button>
                 </div>
             </section>
 
-            <!-- Step 3: Content Search -->
+            <!-- Step 3: Select News -->
             <section id="step-3" class="step-content hidden">
                 <div class="page-header">
-                    <h1 class="page-title">Step 3: 内容搜索</h1>
-                    <p class="page-subtitle">搜索已抓取的新闻或网络内容</p>
+                    <h1 class="page-title">Step 3: 选择新闻</h1>
+                    <p class="page-subtitle">选择要包含在简报中的新闻文章</p>
                 </div>
 
                 <div class="card">
-                    <h3 class="card-title">🔍 搜索内容</h3>
-                    <div class="form-group">
-                        <input type="text" id="searchQuery" class="form-input" placeholder="输入关键词搜索..." style="font-size: 16px;">
-                    </div>
+                    <h3 class="card-title">筛选条件</h3>
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label">搜索类型</label>
-                            <select id="searchType" class="form-select">
-                                <option value="local">本地新闻 (已抓取)</option>
-                                <option value="web">网络搜索</option>
-                                <option value="both">两者都搜</option>
-                            </select>
+                            <label class="form-label">开始日期</label>
+                            <input type="date" id="dateFrom" class="form-input">
                         </div>
                         <div class="form-group">
-                            <label class="form-label">搜索引擎</label>
-                            <select id="searchEngine" class="form-select">
-                                <option value="duckduckgo">DuckDuckGo</option>
-                                <option value="google">Google</option>
-                                <option value="bing">Bing</option>
-                                <option value="brave">Brave</option>
-                            </select>
+                            <label class="form-label">结束日期</label>
+                            <input type="date" id="dateTo" class="form-input">
                         </div>
                         <div class="form-group">
-                            <label class="form-label">结果数量</label>
-                            <select id="searchLimit" class="form-select">
-                                <option value="10">10条</option>
-                                <option value="20" selected>20条</option>
-                                <option value="50">50条</option>
+                            <label class="form-label">语言</label>
+                            <select id="filterLang" class="form-select">
+                                <option value="">全部</option>
+                                {% for code, name in languages.items() %}
+                                <option value="{{ code }}">{{ name }}</option>
+                                {% endfor %}
                             </select>
                         </div>
-                    </div>
-                    <button class="btn btn-primary" onclick="doSearch()">🔍 搜索</button>
-                </div>
-
-                <div class="card">
-                    <h3 class="card-title">📋 搜索结果</h3>
-                    <p style="color: var(--text-secondary); margin-bottom: 10px;">点击选择要加入简报的内容</p>
-                    <div class="news-list" id="searchResults">
-                        <div style="padding: 20px; text-align: center; color: var(--text-secondary);">
-                            输入关键词开始搜索
+                        <div class="form-group" style="padding-top: 20px;">
+                            <button class="btn btn-primary btn-sm" onclick="loadArticles()">筛选</button>
                         </div>
                     </div>
                 </div>
 
                 <div class="card">
-                    <h3 class="card-title">📝 已选内容 (<span id="selectedCount">0</span> 条)</h3>
-                    <div class="news-list" id="selectedContent">
-                        <div style="padding: 20px; text-align: center; color: var(--text-secondary);">
-                            从上方结果中选择内容
-                        </div>
+                    <h3 class="card-title">
+                        <span>新闻列表</span>
+                        <span style="margin-left: auto; font-weight: normal; font-size: 12px; color: var(--text-secondary);">
+                            已选: <span id="selectedCount">0</span> 篇 / 共 <span id="totalCount">0</span> 篇
+                        </span>
+                    </h3>
+                    <div style="margin-bottom: 10px;">
+                        <button class="btn btn-secondary btn-sm" onclick="selectAll()">全选当前页</button>
+                        <button class="btn btn-secondary btn-sm" onclick="clearSelection()">清除选择</button>
                     </div>
+                    <div class="article-list" id="articleList">
+                        <div style="padding: 20px; text-align: center; color: var(--text-secondary);">点击"筛选"加载文章</div>
+                    </div>
+                    <div class="pagination" id="pagination"></div>
                 </div>
 
                 <div class="btn-group">
-                    <button class="btn btn-secondary" onclick="goToStep(2)">← 上一步</button>
-                    <button class="btn btn-secondary" onclick="clearSelected()">清空选择</button>
-                    <button class="btn btn-primary btn-lg" onclick="goToStep(4)">生成简报 →</button>
+                    <button class="btn btn-secondary" onclick="goToStep(2)">上一步</button>
+                    <button class="btn btn-success" id="nextToBriefing" onclick="goToStep(4)" disabled>已选 0 篇，继续</button>
                 </div>
             </section>
 
@@ -536,15 +493,15 @@
             <section id="step-4" class="step-content hidden">
                 <div class="page-header">
                     <h1 class="page-title">Step 4: 生成简报</h1>
-                    <p class="page-subtitle">AI总结已选内容，支持多语言输出</p>
+                    <p class="page-subtitle">基于选中的新闻生成简报</p>
                 </div>
 
                 <div class="card">
-                    <h3 class="card-title">📋 简报设置</h3>
+                    <h3 class="card-title">简报设置</h3>
                     <div class="form-row">
                         <div class="form-group">
                             <label class="form-label">输出语言</label>
-                            <select id="outputLanguage" class="form-select">
+                            <select id="outputLang" class="form-select">
                                 {% for code, name in languages.items() %}
                                 <option value="{{ code }}" {% if code == current_lang %}selected{% endif %}>{{ name }}</option>
                                 {% endfor %}
@@ -553,203 +510,151 @@
                         <div class="form-group">
                             <label class="form-label">简报风格</label>
                             <select id="briefingStyle" class="form-select">
-                                <option value="brief">简要概述</option>
+                                <option value="story">叙事风格</option>
                                 <option value="detailed">详细分析</option>
+                                <option value="brief">简要概述</option>
                                 <option value="bullet">要点列表</option>
-                                <option value="executive">执行摘要</option>
-                                <option value="story" selected>叙事风格 (适合TTS)</option>
                             </select>
                         </div>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">自定义指令 (可选)</label>
-                        <input type="text" id="customInstruction" class="form-input" placeholder="例如：重点关注经济影响">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="showSource" checked>
+                        <label for="showSource">显示信息出处</label>
                     </div>
                 </div>
 
                 <div class="card">
-                    <h3 class="card-title">📄 待处理内容</h3>
-                    <div id="contentToProcess" class="output-area" style="max-height: 200px; overflow-y: auto;">
-                        将显示已选择的内容摘要...
-                    </div>
+                    <h3 class="card-title">选中的文章</h3>
+                    <div id="selectedArticlesInfo" style="font-size: 13px; color: var(--text-secondary);">0 篇文章</div>
                 </div>
 
                 <div class="card">
-                    <h3 class="card-title">✨ 生成的简报</h3>
-                    <div id="briefingOutput" class="output-area" style="min-height: 300px;">
-                        点击"生成简报"开始处理...
-                    </div>
+                    <h3 class="card-title">生成的简报</h3>
+                    <div class="briefing-output" id="briefingOutput">点击"生成简报"开始...</div>
+                    <div class="status-bar" id="briefingStatus">准备就绪</div>
                 </div>
 
                 <div class="btn-group">
-                    <button class="btn btn-secondary" onclick="goToStep(3)">← 上一步</button>
-                    <button class="btn btn-primary" onclick="generateBriefing()">✨ 生成简报</button>
-                    <button class="btn btn-secondary" onclick="exportBriefing()">📥 导出</button>
-                    <button class="btn btn-primary btn-lg" onclick="goToStep(5)">TTS播报 →</button>
+                    <button class="btn btn-secondary" onclick="goToStep(3)">上一步</button>
+                    <button class="btn btn-primary" id="generateBtn" onclick="generateBriefing()">生成简报</button>
+                    <button class="btn btn-secondary" onclick="exportBriefing()">导出</button>
+                    <button class="btn btn-success" id="nextToTTS" onclick="goToStep(5)" style="display:none;">TTS播报</button>
                 </div>
             </section>
 
-            <!-- Step 5: TTS Playback -->
+            <!-- Step 5: TTS -->
             <section id="step-5" class="step-content hidden">
                 <div class="page-header">
                     <h1 class="page-title">Step 5: TTS播报</h1>
-                    <p class="page-subtitle">选择语音，将简报转换为音频</p>
+                    <p class="page-subtitle">将简报转换为语音</p>
                 </div>
 
                 <div class="card">
-                    <h3 class="card-title">🔊 语音设置</h3>
+                    <h3 class="card-title">语音设置</h3>
                     <div class="form-row">
                         <div class="form-group">
                             <label class="form-label">TTS引擎</label>
                             <select id="ttsEngine" class="form-select" onchange="loadVoices()">
-                                <option value="edge-tts">Edge TTS (推荐)</option>
-                                <option value="gtts">Google TTS</option>
-                                <option value="pyttsx3">离线TTS</option>
                             </select>
                         </div>
                         <div class="form-group">
                             <label class="form-label">语速</label>
-                            <input type="range" id="ttsSpeed" min="0.5" max="2" step="0.1" value="1" style="width: 100%;">
-                            <span id="speedLabel">1.0x</span>
+                            <select id="ttsSpeed" class="form-select">
+                                <option value="0.8">0.8x</option>
+                                <option value="1.0" selected>1.0x</option>
+                                <option value="1.2">1.2x</option>
+                            </select>
                         </div>
                     </div>
                 </div>
 
                 <div class="card">
-                    <h3 class="card-title">🎤 选择语音</h3>
-                    <div class="voice-grid" id="voiceGrid">
-                        <div style="padding: 20px; text-align: center; color: var(--text-secondary);">
-                            加载语音列表...
-                        </div>
+                    <h3 class="card-title">播报内容</h3>
+                    <textarea id="ttsContent" class="form-textarea" rows="6" placeholder="简报内容..."></textarea>
+                </div>
+
+                <div class="card">
+                    <h3 class="card-title">音频</h3>
+                    <audio id="audioPlayer" class="audio-player" controls></audio>
+                    <div class="btn-group">
+                        <button class="btn btn-primary" id="ttsBtn" onclick="generateAudio()">生成音频</button>
+                        <button class="btn btn-success" id="playBtn" onclick="playAudio()" disabled>播放</button>
+                        <button class="btn btn-secondary" id="saveBtn" onclick="saveAudio()" disabled>另存为</button>
                     </div>
-                </div>
-
-                <div class="card">
-                    <h3 class="card-title">📝 待播报内容</h3>
-                    <textarea id="ttsContent" class="form-textarea" rows="8" placeholder="简报内容将显示在这里..."></textarea>
-                </div>
-
-                <div class="card">
-                    <h3 class="card-title">🎵 音频输出</h3>
-                    <audio id="audioPlayer" controls style="width: 100%;" controlsList="nodownload"></audio>
                     <div class="status-bar" id="ttsStatus">准备就绪</div>
                 </div>
 
                 <div class="btn-group">
-                    <button class="btn btn-secondary" onclick="goToStep(4)">← 上一步</button>
-                    <button class="btn btn-primary" onclick="generateAudio()">🔊 生成音频</button>
-                    <button class="btn btn-secondary" onclick="downloadAudio()">📥 下载音频</button>
-                    <button class="btn btn-success btn-lg" onclick="startOver()">🔄 重新开始</button>
+                    <button class="btn btn-secondary" onclick="goToStep(4)">上一步</button>
+                    <button class="btn btn-success" onclick="startOver()">重新开始</button>
                 </div>
             </section>
         </main>
     </div>
 
     <script>
-        // Global state
         let currentStep = 1;
-        let selectedItems = [];
+        let selectedArticles = [];
         let currentBriefing = '';
         let currentAudioPath = '';
-
-        // Language grid toggle
-        document.querySelectorAll('.lang-item').forEach(item => {
-            item.addEventListener('click', () => {
-                item.classList.toggle('selected');
-            });
-        });
-
-        // TTS speed label
-        document.getElementById('ttsSpeed').addEventListener('input', function() {
-            document.getElementById('speedLabel').textContent = this.value + 'x';
-        });
+        let selectedLangs = [];
+        let currentPage = 1;
+        let totalPages = 1;
+        let allArticles = [];
 
         // Navigation
         function goToStep(step) {
             document.querySelectorAll('.step-content').forEach(s => s.classList.add('hidden'));
             document.getElementById('step-' + step).classList.remove('hidden');
-            
             document.querySelectorAll('.step-item').forEach((item, i) => {
                 item.classList.remove('active');
                 if (i + 1 < step) item.classList.add('completed');
-                else item.classList.remove('completed');
             });
-            document.querySelector(`[data-step="${step}"]`).classList.add('active');
-            
+            document.querySelector('[data-step="' + step + '"]').classList.add('active');
             currentStep = step;
             
-            // Load data for step
             if (step === 2) loadStats();
-            if (step === 4) updateContentToProcess();
-            if (step === 5) {
-                document.getElementById('ttsContent').value = currentBriefing;
-                loadVoices();
-            }
+            if (step === 3) { loadArticles(); }
+            if (step === 4) updateSelectedInfo();
+            if (step === 5) { document.getElementById('ttsContent').value = currentBriefing; loadTtsEngines(); }
         }
 
-        // Step 1: Model settings
+        // Language selection
+        function toggleLang(el) { el.classList.toggle('selected'); updateSelectedLangs(); }
+        function selectAllLangs() { document.querySelectorAll('.lang-item').forEach(el => el.classList.add('selected')); updateSelectedLangs(); }
+        function clearAllLangs() { document.querySelectorAll('.lang-item').forEach(el => el.classList.remove('selected')); updateSelectedLangs(); }
+        function updateSelectedLangs() {
+            selectedLangs = [];
+            document.querySelectorAll('.lang-item.selected').forEach(el => selectedLangs.push(el.dataset.lang));
+        }
+
+        // Model settings
         function testOllama() {
-            const url = document.getElementById('ollamaUrl').value;
-            fetch('/api/models?url=' + encodeURIComponent(url))
+            const status = document.getElementById('ollamaStatus');
+            status.textContent = '测试中...';
+            fetch('/api/models?url=' + encodeURIComponent(document.getElementById('ollamaUrl').value))
                 .then(r => r.json())
                 .then(data => {
-                    const status = document.getElementById('ollamaStatus');
-                    if (data.available) {
-                        status.innerHTML = '<span style="color: var(--success)">✓ 连接成功</span>';
-                    } else {
-                        status.innerHTML = '<span style="color: var(--danger)">✗ 连接失败</span>';
-                    }
+                    status.innerHTML = data.available ? '<span style="color: var(--success)">✓</span>' : '<span style="color: var(--danger)">✗</span>';
                 });
         }
 
         function loadModels() {
-            const url = document.getElementById('ollamaUrl').value;
-            fetch('/api/models?url=' + encodeURIComponent(url))
+            fetch('/api/models?url=' + encodeURIComponent(document.getElementById('ollamaUrl').value))
                 .then(r => r.json())
                 .then(data => {
                     if (data.available) {
-                        const chatSelect = document.getElementById('chatModel');
-                        const embedSelect = document.getElementById('embedModel');
-                        
-                        chatSelect.innerHTML = '<option value="">选择模型...</option>' +
-                            data.chat_models.map(m => `<option value="${m}">${m}</option>`).join('');
-                        embedSelect.innerHTML = '<option value="">选择模型...</option>' +
-                            data.embedding_models.map(m => `<option value="${m}">${m}</option>`).join('');
+                        document.getElementById('chatModel').innerHTML = '<option value="">选择</option>' + data.chat_models.map(m => '<option value="' + m + '">' + m + '</option>').join('');
+                        document.getElementById('embedModel').innerHTML = '<option value="">选择</option>' + data.embedding_models.map(m => '<option value="' + m + '">' + m + '</option>').join('');
                     }
                 });
         }
 
         function updateProxyMode() {
-            const mode = document.getElementById('proxyMode').value;
-            const show = mode === 'manual';
-            document.getElementById('manualProxy').style.display = show ? 'flex' : 'none';
-            document.getElementById('manualProxy2').style.display = show ? 'flex' : 'none';
+            document.getElementById('proxyManual').style.display = document.getElementById('proxyMode').value === 'manual' ? 'flex' : 'none';
         }
 
-        function testProxy() {
-            document.getElementById('proxyStatus').textContent = '测试中...';
-            fetch('/api/proxy/test', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    mode: document.getElementById('proxyMode').value,
-                    http: document.getElementById('proxyHttp').value,
-                    https: document.getElementById('proxyHttps').value,
-                    socks5: document.getElementById('proxySocks5').value
-                })
-            })
-            .then(r => r.json())
-            .then(data => {
-                const status = document.getElementById('proxyStatus');
-                if (data.success) {
-                    status.innerHTML = `<span style="color: var(--success)">✓ ${data.response_time_ms}ms</span>`;
-                } else {
-                    status.innerHTML = `<span style="color: var(--danger)">✗ ${data.error}</span>`;
-                }
-            });
-        }
-
-        function saveStep1() {
+        function saveAndNext(next) {
             fetch('/api/settings', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
@@ -759,312 +664,280 @@
                     embedding_model: document.getElementById('embedModel').value,
                     proxy_mode: document.getElementById('proxyMode').value,
                     proxy_http: document.getElementById('proxyHttp').value,
-                    proxy_https: document.getElementById('proxyHttps').value,
-                    proxy_socks5: document.getElementById('proxySocks5').value
                 })
-            })
-            .then(() => {
+            }).then(() => {
                 document.querySelector('[data-step="1"]').classList.add('completed');
-                goToStep(2);
+                goToStep(next);
             });
         }
 
-        // Step 2: Fetch news
+        // Stats
         function loadStats() {
             fetch('/api/stats')
                 .then(r => r.json())
                 .then(data => {
-                    document.getElementById('statTotal').textContent = data.articles?.total || 0;
+                    document.getElementById('statArticles').textContent = data.articles?.total || 0;
                     document.getElementById('statSources').textContent = data.sources_count || 109;
-                    document.getElementById('statIndexed').textContent = data.indexed || 0;
                 });
         }
 
-        function fetchNews() {
-            const langs = [];
-            document.querySelectorAll('.lang-item.selected').forEach(item => {
-                langs.push(item.dataset.lang);
-            });
-            
-            if (langs.length === 0) {
-                alert('请至少选择一种语言');
-                return;
-            }
-
+        // Fetch news
+        function startFetch() {
+            if (selectedLangs.length === 0) { alert('请选择语言'); return; }
+            const btn = document.getElementById('fetchBtn');
+            btn.disabled = true; btn.classList.add('loading');
             const log = document.getElementById('fetchLog');
             log.textContent = '开始抓取...\n';
-
-            langs.forEach(lang => {
-                log.textContent += `抓取 ${lang} 新闻...\n`;
+            let completed = 0;
+            selectedLangs.forEach(lang => {
+                log.textContent += '[' + lang + '] 抓取中...\n';
                 fetch('/api/news/fetch', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        language: lang,
-                        max_articles: parseInt(document.getElementById('maxArticles').value),
-                        fetcher: document.getElementById('fetcher').value
-                    })
-                })
-                .then(r => r.json())
-                .then(data => {
-                    if (data.success) {
-                        log.textContent += `${lang}: 抓取了 ${data.data.fetched} 篇文章\n`;
-                    } else {
-                        log.textContent += `${lang}: 错误 - ${data.error}\n`;
+                    body: JSON.stringify({ language: lang, max_articles: parseInt(document.getElementById('maxArticles').value) })
+                }).then(r => r.json()).then(data => {
+                    completed++;
+                    log.textContent += '[' + lang + '] ' + (data.success ? data.data.fetched + ' 篇' : '失败') + '\n';
+                    if (completed === selectedLangs.length) {
+                        log.textContent += '\n建立索引...\n';
+                        fetch('/api/index', { method: 'POST' }).then(r => r.json()).then(idx => {
+                            log.textContent += '完成: ' + (idx.data?.indexed || 0) + ' 篇已索引\n';
+                            btn.disabled = false; btn.classList.remove('loading');
+                            loadStats();
+                        });
                     }
-                    loadStats();
                 });
             });
         }
 
-        function indexNews() {
-            fetch('/api/index', { method: 'POST' })
+        // Article selection
+        function loadArticles(page = 1) {
+            currentPage = page;
+            const params = new URLSearchParams();
+            const dateFrom = document.getElementById('dateFrom').value;
+            const dateTo = document.getElementById('dateTo').value;
+            const lang = document.getElementById('filterLang').value;
+            if (dateFrom) params.append('date_from', dateFrom);
+            if (dateTo) params.append('date_to', dateTo);
+            if (lang) params.append('language', lang);
+            params.append('page', page);
+            params.append('per_page', 20);
+
+            fetch('/api/news/list?' + params.toString())
                 .then(r => r.json())
                 .then(data => {
-                    document.getElementById('fetchLog').textContent += '索引完成\n';
-                    loadStats();
+                    allArticles = data.articles || [];
+                    totalPages = data.pages || 1;
+                    document.getElementById('totalCount').textContent = data.total || 0;
+                    renderArticleList();
+                    renderPagination();
                 });
         }
 
-        // Step 3: Search
-        function doSearch() {
-            const query = document.getElementById('searchQuery').value;
-            const type = document.getElementById('searchType').value;
-            
-            if (!query) return;
-
-            const resultsDiv = document.getElementById('searchResults');
-            resultsDiv.innerHTML = '<div style="padding: 20px; text-align: center;">搜索中...</div>';
-
-            if (type === 'local' || type === 'both') {
-                fetch('/api/search', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ query: query, top_k: 20 })
-                })
-                .then(r => r.json())
-                .then(data => {
-                    if (data.success) {
-                        displayResults(data.data.results || [], 'local');
-                    }
-                });
-            }
-
-            if (type === 'web' || type === 'both') {
-                fetch('/api/web-search', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        query: query,
-                        engines: [document.getElementById('searchEngine').value],
-                        num_results: parseInt(document.getElementById('searchLimit').value)
-                    })
-                })
-                .then(r => r.json())
-                .then(data => {
-                    if (data.success) {
-                        displayResults(data.data.results || [], 'web');
-                    }
-                });
-            }
-        }
-
-        function displayResults(results, type) {
-            const resultsDiv = document.getElementById('searchResults');
-            resultsDiv.innerHTML = '';
-
-            results.forEach((item, i) => {
-                const div = document.createElement('div');
-                div.className = 'news-item';
-                div.innerHTML = `
-                    <div class="news-title">${item.title || item.metadata?.title || '无标题'}</div>
-                    <div class="news-meta">${type === 'web' ? item.source : item.metadata?.website || ''} ${item.metadata?.date || ''}</div>
-                `;
-                div.onclick = () => toggleSelect(item, div);
-                resultsDiv.appendChild(div);
-            });
-        }
-
-        function toggleSelect(item, element) {
-            element.classList.toggle('selected');
-            
-            const index = selectedItems.findIndex(i => 
-                (i.title || i.metadata?.title) === (item.title || item.metadata?.title)
-            );
-            
-            if (index > -1) {
-                selectedItems.splice(index, 1);
-            } else {
-                selectedItems.push(item);
-            }
-            
-            updateSelectedList();
-        }
-
-        function updateSelectedList() {
-            const count = document.getElementById('selectedCount');
-            count.textContent = selectedItems.length;
-
-            const list = document.getElementById('selectedContent');
-            if (selectedItems.length === 0) {
-                list.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-secondary);">从上方结果中选择内容</div>';
-            } else {
-                list.innerHTML = selectedItems.map((item, i) => `
-                    <div class="news-item selected">
-                        <div class="news-title">${item.title || item.metadata?.title || '无标题'}</div>
-                        <div class="news-meta">${item.snippet?.substring(0, 100) || item.document?.substring(0, 100) || ''}...</div>
-                    </div>
-                `).join('');
-            }
-        }
-
-        function clearSelected() {
-            selectedItems = [];
-            document.querySelectorAll('.news-item.selected').forEach(el => el.classList.remove('selected'));
-            updateSelectedList();
-        }
-
-        // Step 4: Generate briefing
-        function updateContentToProcess() {
-            const div = document.getElementById('contentToProcess');
-            if (selectedItems.length === 0) {
-                div.textContent = '请返回上一步选择要总结的内容';
-            } else {
-                div.textContent = `已选择 ${selectedItems.length} 条内容:\n\n` +
-                    selectedItems.map((item, i) => 
-                        `${i+1}. ${item.title || item.metadata?.title || '无标题'}`
-                    ).join('\n');
-            }
-        }
-
-        function generateBriefing() {
-            if (selectedItems.length === 0) {
-                alert('请先选择要总结的内容');
+        function renderArticleList() {
+            const container = document.getElementById('articleList');
+            if (allArticles.length === 0) {
+                container.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-secondary);">暂无文章</div>';
                 return;
             }
+            container.innerHTML = allArticles.map(a => 
+                '<div class="article-item ' + (selectedArticles.includes(a.path) ? 'selected' : '') + '" onclick="toggleArticle(\'' + a.path + '\')">' +
+                '<input type="checkbox" class="article-checkbox" ' + (selectedArticles.includes(a.path) ? 'checked' : '') + ' onclick="event.stopPropagation(); toggleArticle(\'' + a.path + '\')">' +
+                '<div class="article-info">' +
+                '<div class="article-title">' + (a.title || 'Untitled') + '</div>' +
+                '<div class="article-meta">' + (a.website || '') + ' · ' + (a.date || '') + '</div>' +
+                '</div></div>'
+            ).join('');
+        }
 
-            const output = document.getElementById('briefingOutput');
-            output.textContent = '正在生成简报...';
+        function renderPagination() {
+            const container = document.getElementById('pagination');
+            if (totalPages <= 1) { container.innerHTML = ''; return; }
+            let html = '';
+            if (currentPage > 1) html += '<button class="page-btn" onclick="loadArticles(' + (currentPage - 1) + ')">上一页</button>';
+            for (let i = Math.max(1, currentPage - 2); i <= Math.min(totalPages, currentPage + 2); i++) {
+                html += '<button class="page-btn ' + (i === currentPage ? 'active' : '') + '" onclick="loadArticles(' + i + ')">' + i + '</button>';
+            }
+            if (currentPage < totalPages) html += '<button class="page-btn" onclick="loadArticles(' + (currentPage + 1) + ')">下一页</button>';
+            container.innerHTML = html;
+        }
 
-            // Combine content
-            const content = selectedItems.map(item => {
-                return `标题: ${item.title || item.metadata?.title || ''}\n${item.snippet || item.document || ''}`;
-            }).join('\n\n---\n\n');
+        function toggleArticle(path) {
+            const idx = selectedArticles.indexOf(path);
+            if (idx >= 0) selectedArticles.splice(idx, 1);
+            else selectedArticles.push(path);
+            updateSelectedCount();
+            renderArticleList();
+        }
 
-            fetch('/api/summarize', {
+        function selectAll() {
+            allArticles.forEach(a => {
+                if (!selectedArticles.includes(a.path)) selectedArticles.push(a.path);
+            });
+            updateSelectedCount();
+            renderArticleList();
+        }
+
+        function clearSelection() {
+            selectedArticles = [];
+            updateSelectedCount();
+            renderArticleList();
+        }
+
+        function updateSelectedCount() {
+            document.getElementById('selectedCount').textContent = selectedArticles.length;
+            const btn = document.getElementById('nextToBriefing');
+            btn.disabled = selectedArticles.length === 0;
+            btn.textContent = '已选 ' + selectedArticles.length + ' 篇，继续';
+        }
+
+        function updateSelectedInfo() {
+            document.getElementById('selectedArticlesInfo').textContent = selectedArticles.length + ' 篇文章';
+        }
+
+        // Briefing generation
+        function generateBriefing() {
+            if (selectedArticles.length === 0) { alert('请先选择文章'); return; }
+            const btn = document.getElementById('generateBtn');
+            btn.disabled = true; btn.textContent = '生成中...';
+            document.getElementById('briefingOutput').textContent = '正在生成...';
+
+            fetch('/api/briefing/from-articles', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({
-                    content: content,
-                    target_language: document.getElementById('outputLanguage').value,
-                    style: document.getElementById('briefingStyle').value
+                    articles: selectedArticles,
+                    language: document.getElementById('outputLang').value,
+                    show_source: document.getElementById('showSource').checked
                 })
             })
-            .then(r => r.json())
-            .then(data => {
-                if (data.success) {
-                    currentBriefing = data.data.summary;
-                    output.textContent = currentBriefing;
-                } else {
-                    output.textContent = '生成失败: ' + data.error;
+            .then(response => {
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let content = '';
+                function read() {
+                    reader.read().then(({ done, value }) => {
+                        if (done) {
+                            currentBriefing = content;
+                            document.getElementById('briefingOutput').textContent = content;
+                            document.getElementById('briefingStatus').innerHTML = '<span class="status-success">✓ 完成</span>';
+                            btn.disabled = false; btn.textContent = '生成简报';
+                            document.getElementById('nextToTTS').style.display = 'inline-flex';
+                            return;
+                        }
+                        const text = decoder.decode(value);
+                        text.split('\n').forEach(line => {
+                            if (line.startsWith('data: ')) {
+                                try {
+                                    const data = JSON.parse(line.slice(6));
+                                    if (data.content) content += data.content;
+                                    if (data.error) content = '错误: ' + data.error;
+                                } catch (e) {}
+                            }
+                        });
+                        document.getElementById('briefingOutput').textContent = content;
+                        read();
+                    });
                 }
+                read();
             });
         }
 
         function exportBriefing() {
             if (!currentBriefing) return;
-            
             const blob = new Blob([currentBriefing], { type: 'text/markdown' });
-            const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
-            a.href = url;
+            a.href = URL.createObjectURL(blob);
             a.download = 'briefing_' + new Date().toISOString().slice(0, 10) + '.md';
             a.click();
         }
 
-        // Step 5: TTS
-        function loadVoices() {
-            const engine = document.getElementById('ttsEngine').value;
-            const lang = document.getElementById('outputLanguage').value;
-
-            fetch(`/api/tts/voices?engine=${engine}&language=${lang}`)
+        // TTS
+        function loadTtsEngines() {
+            fetch('/api/tts/engines')
                 .then(r => r.json())
                 .then(data => {
-                    const grid = document.getElementById('voiceGrid');
-                    if (data.success && data.data.voices.length > 0) {
-                        grid.innerHTML = data.data.voices.map((v, i) => `
-                            <div class="voice-item ${i === 0 ? 'selected' : ''}" data-voice="${v.id}" onclick="selectVoice(this)">
-                                <div class="voice-name">${v.name}</div>
-                                <div class="voice-lang">${v.language} ${v.gender || ''}</div>
-                            </div>
-                        `).join('');
-                    } else {
-                        grid.innerHTML = '<div style="padding: 20px; text-align: center;">使用默认语音</div>';
+                    const select = document.getElementById('ttsEngine');
+                    select.innerHTML = '';
+                    (data.engines || []).forEach(e => {
+                        const opt = document.createElement('option');
+                        opt.value = e.name;
+                        opt.textContent = e.name + (e.offline ? ' (离线)' : '');
+                        select.appendChild(opt);
+                    });
+                    if (select.options.length === 0) {
+                        select.innerHTML = '<option value="">无可用引擎</option>';
                     }
                 });
         }
 
-        function selectVoice(element) {
-            document.querySelectorAll('.voice-item').forEach(el => el.classList.remove('selected'));
-            element.classList.add('selected');
+        function loadVoices() {
+            fetch('/api/tts/voices?engine=' + document.getElementById('ttsEngine').value + '&language=' + document.getElementById('outputLang').value)
+                .then(r => r.json());
         }
 
         function generateAudio() {
-            const text = document.getElementById('ttsContent').value;
-            if (!text) {
-                alert('没有可播报的内容');
-                return;
-            }
-
-            const status = document.getElementById('ttsStatus');
-            status.textContent = '正在生成音频...';
-
-            const voiceEl = document.querySelector('.voice-item.selected');
-            const voice = voiceEl ? voiceEl.dataset.voice : '';
-
+            const text = document.getElementById('ttsContent').value.trim();
+            if (!text) { alert('没有内容'); return; }
+            const btn = document.getElementById('ttsBtn');
+            btn.disabled = true; btn.textContent = '生成中...';
             fetch('/api/tts', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({
                     text: text,
                     engine: document.getElementById('ttsEngine').value,
-                    voice: voice,
-                    language: document.getElementById('outputLanguage').value,
+                    language: document.getElementById('outputLang').value,
                     rate: parseFloat(document.getElementById('ttsSpeed').value)
                 })
-            })
-            .then(r => r.json())
-            .then(data => {
+            }).then(r => r.json()).then(data => {
+                btn.disabled = false; btn.textContent = '生成音频';
                 if (data.success) {
                     currentAudioPath = data.data.audio_path;
-                    const audio = document.getElementById('audioPlayer');
-                    audio.src = '/api/audio?path=' + encodeURIComponent(currentAudioPath);
-                    audio.play();
-                    status.innerHTML = `<span style="color: var(--success)">✓ 音频已生成，时长: ${data.data.duration.toFixed(1)}秒</span>`;
+                    document.getElementById('audioPlayer').src = '/api/audio?path=' + encodeURIComponent(currentAudioPath);
+                    document.getElementById('playBtn').disabled = false;
+                    document.getElementById('saveBtn').disabled = false;
+                    document.getElementById('ttsStatus').innerHTML = '<span class="status-success">✓ 音频已生成</span>';
                 } else {
-                    status.innerHTML = `<span style="color: var(--danger)">✗ ${data.error}</span>`;
+                    document.getElementById('ttsStatus').innerHTML = '<span class="status-error">✗ ' + data.error + '</span>';
                 }
             });
         }
 
-        function downloadAudio() {
+        function playAudio() { document.getElementById('audioPlayer').play(); }
+        function saveAudio() {
             if (!currentAudioPath) return;
-            const a = document.createElement('a');
-            a.href = '/api/audio?path=' + encodeURIComponent(currentAudioPath);
-            a.download = 'briefing_' + new Date().toISOString().slice(0, 10) + '.mp3';
-            a.click();
+            fetch('/api/audio?path=' + encodeURIComponent(currentAudioPath))
+                .then(r => r.blob())
+                .then(blob => {
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(blob);
+                    a.download = 'briefing_' + new Date().toISOString().slice(0, 10) + '.mp3';
+                    a.click();
+                });
         }
 
         function startOver() {
-            selectedItems = [];
+            selectedArticles = [];
             currentBriefing = '';
             currentAudioPath = '';
+            document.getElementById('briefingOutput').textContent = '点击"生成简报"开始...';
+            document.getElementById('ttsContent').value = '';
+            document.getElementById('audioPlayer').src = '';
+            document.getElementById('nextToTTS').style.display = 'none';
+            document.getElementById('playBtn').disabled = true;
+            document.getElementById('saveBtn').disabled = true;
+            document.querySelectorAll('.step-item').forEach(item => item.classList.remove('completed'));
             goToStep(1);
         }
 
-        // Initialize
+        // Init
         loadModels();
         loadStats();
+        const today = new Date().toISOString().slice(0, 10);
+        const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+        document.getElementById('dateFrom').value = weekAgo;
+        document.getElementById('dateTo').value = today;
     </script>
 </body>
 </html>

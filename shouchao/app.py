@@ -144,6 +144,8 @@ def create_app():
         language = data.get("language")
         categories = data.get("categories")
         date = data.get("date")
+        show_source = data.get("show_source", False)
+        web_search_results = data.get("web_search_results", [])
 
         def generate():
             try:
@@ -159,16 +161,22 @@ def create_app():
                 gen = BriefingGenerator(ollama, indexer, storage)
 
                 if briefing_type == "weekly":
-                    chunks = gen.generate_weekly(date, language)
+                    chunks = gen.generate_weekly(week_start=date, language=language, show_source=show_source)
                 elif briefing_type == "domain" and categories:
                     chunks = gen.generate_domain(
-                        categories[0], date_from=date, language=language,
+                        categories[0], date_from=date, language=language, show_source=show_source,
                     )
                 else:
-                    chunks = gen.generate_daily(date, language, categories)
+                    chunks = gen.generate_daily(date, language, categories, show_source)
 
                 for chunk in chunks:
                     yield _sse_data({"content": chunk})
+                
+                if web_search_results:
+                    yield _sse_data({"content": "\n\n---\n\n## 网络搜索补充信息\n\n"})
+                    for r in web_search_results:
+                        yield _sse_data({"content": f"- **{r.get('title', '')}**\n  {r.get('snippet', '')}\n  来源: {r.get('source', '')}\n\n"})
+                
                 yield _sse_data({"done": True})
             except Exception as e:
                 yield _sse_data({"error": str(e)})
@@ -190,6 +198,46 @@ def create_app():
                     "size": f.stat().st_size,
                 })
         return jsonify({"briefings": briefings})
+
+    @app.route("/api/briefing/from-articles", methods=["POST"])
+    def api_briefing_from_articles():
+        """Generate briefing from selected articles."""
+        data = request.get_json(silent=True) or {}
+        article_paths = data.get("articles", [])
+        language = data.get("language", "zh")
+        show_source = data.get("show_source", True)
+        title = data.get("title")
+
+        def generate():
+            try:
+                from shouchao.core.config import CONFIG as cfg
+                from shouchao.core.ollama_client import OllamaClient
+                from shouchao.core.indexer import NewsIndexer
+                from shouchao.core.storage import ArticleStorage
+                from shouchao.core.briefing import BriefingGenerator
+
+                ollama = OllamaClient(cfg.ollama_url)
+                indexer = NewsIndexer(ollama)
+                storage = ArticleStorage()
+                gen = BriefingGenerator(ollama, indexer, storage)
+
+                chunks = gen.generate_from_articles(
+                    article_paths=article_paths,
+                    language=language,
+                    show_source=show_source,
+                    title=title,
+                )
+
+                for chunk in chunks:
+                    yield _sse_data({"content": chunk})
+                yield _sse_data({"done": True})
+            except Exception as e:
+                yield _sse_data({"error": str(e)})
+
+        return Response(
+            stream_with_context(generate()),
+            mimetype="text/event-stream",
+        )
 
     @app.route("/api/analysis", methods=["POST"])
     def api_analysis():
@@ -360,6 +408,18 @@ def create_app():
             rate=rate,
         )
         return jsonify(result.to_dict())
+
+    @app.route("/api/tts/engines", methods=["GET"])
+    def api_tts_engines():
+        from shouchao.core.tts import TTSEngine
+        tts = TTSEngine()
+        engines = []
+        for name in tts.available_engines:
+            engines.append({
+                "name": name,
+                "offline": name in tts.offline_engines
+            })
+        return jsonify({"engines": engines})
 
     @app.route("/api/tts/voices", methods=["GET"])
     def api_tts_voices():

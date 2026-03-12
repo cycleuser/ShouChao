@@ -2,12 +2,13 @@
 Text-to-Speech module for ShouChao.
 
 Supports multiple TTS backends:
-- pyttsx3: Cross-platform offline TTS (no internet required)
+- pyttsx3: Cross-platform offline TTS (uses system voices, no internet required)
 - edge-tts: Microsoft Edge TTS (high quality, requires internet)
-- sherpa-onnx: Neural TTS with local models (offline, high quality)
+- kokoro: High-quality neural TTS with local models (offline)
+- sherpa-onnx: Neural TTS with local ONNX models (offline)
 - gTTS: Google Translate TTS (online)
 
-Provides unified interface for converting text to speech and exporting to audio files.
+All offline engines use local models, no internet required after model download.
 """
 
 import asyncio
@@ -22,6 +23,9 @@ from pathlib import Path
 from typing import Any, Callable, Optional, Union
 
 logger = logging.getLogger(__name__)
+
+# Default model directory for offline TTS
+DEFAULT_TTS_MODEL_DIR = Path.home() / ".shouchao" / "tts_models"
 
 
 @dataclass
@@ -56,6 +60,7 @@ class VoiceInfo:
     gender: str = "neutral"
     engine: str = ""
     sample_rate: int = 22050
+    offline: bool = True
     metadata: dict = field(default_factory=dict)
 
     def to_dict(self) -> dict:
@@ -66,6 +71,7 @@ class VoiceInfo:
             "gender": self.gender,
             "engine": self.engine,
             "sample_rate": self.sample_rate,
+            "offline": self.offline,
             "metadata": self.metadata,
         }
 
@@ -85,6 +91,12 @@ class BaseTTS(ABC):
         """Check if the engine is available."""
         pass
 
+    @property
+    @abstractmethod
+    def is_offline(self) -> bool:
+        """Check if engine works offline."""
+        pass
+
     @abstractmethod
     def get_voices(self, language: Optional[str] = None) -> list[VoiceInfo]:
         """Get available voices."""
@@ -102,7 +114,7 @@ class BaseTTS(ABC):
         """Synthesize text to speech."""
         pass
 
-    def _ensure_output_path(self, output_path: Optional[str] = None) -> str:
+    def _ensure_output_path(self, output_path: Optional[str] = None, ext: str = ".mp3") -> str:
         """Generate output path if not provided."""
         if output_path:
             return output_path
@@ -110,11 +122,11 @@ class BaseTTS(ABC):
         audio_dir = DATA_DIR / "audio"
         audio_dir.mkdir(parents=True, exist_ok=True)
         import uuid
-        return str(audio_dir / f"{uuid.uuid4().hex}.mp3")
+        return str(audio_dir / f"{uuid.uuid4().hex}{ext}")
 
 
 class Pyttsx3TTS(BaseTTS):
-    """pyttsx3 TTS engine - cross-platform offline synthesis."""
+    """pyttsx3 TTS engine - cross-platform offline synthesis using system voices."""
 
     def __init__(self):
         self._engine = None
@@ -132,6 +144,10 @@ class Pyttsx3TTS(BaseTTS):
         except ImportError:
             return False
 
+    @property
+    def is_offline(self) -> bool:
+        return True
+
     def _init_engine(self):
         if self._initialized:
             return
@@ -139,6 +155,7 @@ class Pyttsx3TTS(BaseTTS):
             import pyttsx3
             self._engine = pyttsx3.init()
             self._initialized = True
+            logger.info("pyttsx3 initialized with system voices")
         except Exception as e:
             logger.error(f"Failed to initialize pyttsx3: {e}")
 
@@ -158,6 +175,7 @@ class Pyttsx3TTS(BaseTTS):
                 language=lang,
                 gender=self._extract_gender(v),
                 engine=self.name,
+                offline=True,
             ))
         return voices
 
@@ -178,9 +196,7 @@ class Pyttsx3TTS(BaseTTS):
             )
 
         try:
-            output_path = self._ensure_output_path(output_path)
-            if not output_path.endswith(".mp3"):
-                output_path = output_path.rsplit(".", 1)[0] + ".mp3"
+            output_path = self._ensure_output_path(output_path, ".mp3")
 
             if voice:
                 self._engine.setProperty("voice", voice)
@@ -236,6 +252,271 @@ class Pyttsx3TTS(BaseTTS):
         return 0.0
 
 
+class KokoroTTS(BaseTTS):
+    """Kokoro TTS - high-quality offline neural synthesis.
+    
+    Uses local models from:
+    - https://huggingface.co/hexgrad/Kokoro-82M
+    
+    Install: pip install kokoro
+    Models are downloaded automatically or can be placed in ~/.shouchao/tts_models/kokoro/
+    """
+
+    VOICE_MAP = {
+        "zh": ["zf_xiaoyu", "zm_yunxi"],
+        "en": ["af_bella", "am_adam"],
+        "ja": ["jf_alpha"],
+    }
+
+    def __init__(self, model_dir: Optional[str] = None):
+        self._model_dir = model_dir or str(DEFAULT_TTS_MODEL_DIR / "kokoro")
+        self._tts = None
+        self._initialized = False
+
+    @property
+    def name(self) -> str:
+        return "kokoro"
+
+    @property
+    def is_available(self) -> bool:
+        try:
+            import kokoro
+            return True
+        except ImportError:
+            return False
+
+    @property
+    def is_offline(self) -> bool:
+        return True
+
+    def _init_tts(self):
+        if self._initialized:
+            return
+        try:
+            from kokoro import KPipeline
+            import torch
+            
+            device = "cuda" if torch.cuda.is_available() else "cpu"
+            logger.info(f"Initializing Kokoro TTS on {device}")
+            
+            self._tts = KPipeline(
+                lang_code='a',  # Auto-detect
+                device=device,
+            )
+            self._initialized = True
+            logger.info("Kokoro TTS initialized successfully")
+        except Exception as e:
+            logger.error(f"Failed to initialize Kokoro TTS: {e}")
+
+    def get_voices(self, language: Optional[str] = None) -> list[VoiceInfo]:
+        if not self.is_available:
+            return []
+        
+        voices = []
+        for lang, voice_ids in self.VOICE_MAP.items():
+            if language and not lang.startswith(language):
+                continue
+            for vid in voice_ids:
+                voices.append(VoiceInfo(
+                    id=vid,
+                    name=vid.replace("_", " ").title(),
+                    language=lang,
+                    gender="female" if vid.startswith("zf") or vid.startswith("af") or vid.startswith("jf") else "male",
+                    engine=self.name,
+                    offline=True,
+                ))
+        return voices
+
+    def synthesize(
+        self,
+        text: str,
+        output_path: Optional[str] = None,
+        voice: Optional[str] = None,
+        rate: float = 1.0,
+        pitch: float = 1.0,
+    ) -> TTSResult:
+        if not self.is_available:
+            return TTSResult(
+                success=False,
+                engine=self.name,
+                error="kokoro not installed. Install with: pip install kokoro",
+            )
+        
+        self._init_tts()
+        if not self._tts:
+            return TTSResult(
+                success=False,
+                engine=self.name,
+                error="Kokoro TTS failed to initialize",
+            )
+
+        try:
+            output_path = self._ensure_output_path(output_path, ".wav")
+            
+            if not voice:
+                voice = "af_bella"
+            
+            speed = 1.0 / rate if rate > 0 else 1.0
+            
+            audio_segments = []
+            for _, _, audio in self._tts(text, voice=voice, speed=speed):
+                audio_segments.append(audio)
+            
+            if not audio_segments:
+                return TTSResult(
+                    success=False,
+                    engine=self.name,
+                    error="No audio generated",
+                )
+            
+            import numpy as np
+            combined = np.concatenate(audio_segments)
+            
+            import soundfile as sf
+            sf.write(output_path, combined, samplerate=24000)
+            
+            duration = len(combined) / 24000
+
+            return TTSResult(
+                success=True,
+                audio_path=output_path,
+                duration=duration,
+                engine=self.name,
+                voice=voice,
+            )
+        except Exception as e:
+            logger.error(f"Kokoro TTS synthesis error: {e}")
+            return TTSResult(success=False, engine=self.name, error=str(e))
+
+
+class MeloTTS(BaseTTS):
+    """MeloTTS - high-quality offline TTS by MyShell.
+    
+    Supports multiple languages with local models.
+    
+    Install: pip install melo-tts
+    """
+
+    LANGUAGE_MAP = {
+        "zh": "ZH",
+        "en": "EN",
+        "ja": "JP",
+        "ko": "KR",
+        "es": "ES",
+        "fr": "FR",
+        "de": "DE",
+        "ru": "RU",
+    }
+
+    def __init__(self):
+        self._tts = {}
+        self._initialized_langs = set()
+
+    @property
+    def name(self) -> str:
+        return "melo"
+
+    @property
+    def is_available(self) -> bool:
+        try:
+            from melo_tts import MeloTTS as MTTS
+            return True
+        except ImportError:
+            return False
+
+    @property
+    def is_offline(self) -> bool:
+        return True
+
+    def _init_tts(self, language: str):
+        if language in self._initialized_langs:
+            return True
+        
+        try:
+            from melo_tts import MeloTTS as MTTS
+            
+            lang_code = self.LANGUAGE_MAP.get(language, "EN")
+            self._tts[language] = MTTS(language=lang_code, device="auto")
+            self._initialized_langs.add(language)
+            logger.info(f"MeloTTS initialized for {language}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to initialize MeloTTS for {language}: {e}")
+            return False
+
+    def get_voices(self, language: Optional[str] = None) -> list[VoiceInfo]:
+        if not self.is_available:
+            return []
+        
+        voices = []
+        for lang in self.LANGUAGE_MAP.keys():
+            if language and not lang.startswith(language):
+                continue
+            voices.append(VoiceInfo(
+                id=f"{lang}_default",
+                name=f"{lang.upper()} Default",
+                language=lang,
+                engine=self.name,
+                offline=True,
+            ))
+        return voices
+
+    def synthesize(
+        self,
+        text: str,
+        output_path: Optional[str] = None,
+        voice: Optional[str] = None,
+        rate: float = 1.0,
+        pitch: float = 1.0,
+    ) -> TTSResult:
+        if not self.is_available:
+            return TTSResult(
+                success=False,
+                engine=self.name,
+                error="melo-tts not installed. Install with: pip install melo-tts",
+            )
+        
+        language = "en"
+        if voice and "_" in voice:
+            language = voice.split("_")[0]
+        
+        if not self._init_tts(language):
+            return TTSResult(
+                success=False,
+                engine=self.name,
+                error=f"Failed to initialize MeloTTS for {language}",
+            )
+
+        try:
+            output_path = self._ensure_output_path(output_path, ".wav")
+            
+            speed = 1.0 / rate if rate > 0 else 1.0
+            
+            self._tts[language].tts_to_file(text, output_path, speed=speed)
+            
+            duration = self._get_wav_duration(output_path)
+
+            return TTSResult(
+                success=True,
+                audio_path=output_path,
+                duration=duration,
+                engine=self.name,
+                voice=voice or f"{language}_default",
+            )
+        except Exception as e:
+            logger.error(f"MeloTTS synthesis error: {e}")
+            return TTSResult(success=False, engine=self.name, error=str(e))
+
+    def _get_wav_duration(self, path: str) -> float:
+        try:
+            with wave.open(path, "rb") as wf:
+                frames = wf.getnframes()
+                rate = wf.getframerate()
+                return frames / float(rate)
+        except Exception:
+            return 0.0
+
+
 class EdgeTTS(BaseTTS):
     """Microsoft Edge TTS - high quality online synthesis."""
 
@@ -267,6 +548,10 @@ class EdgeTTS(BaseTTS):
         except ImportError:
             return False
 
+    @property
+    def is_offline(self) -> bool:
+        return False
+
     async def _list_voices_async(self) -> list[VoiceInfo]:
         try:
             import edge_tts
@@ -280,6 +565,7 @@ class EdgeTTS(BaseTTS):
                     language=locale,
                     gender=v.get("Gender", "Neutral").lower(),
                     engine=self.name,
+                    offline=False,
                     metadata={
                         "locale": locale,
                         "suggested_codec": v.get("SuggestedCodec", ""),
@@ -406,6 +692,10 @@ class SherpaOnnxTTS(BaseTTS):
         except ImportError:
             return False
 
+    @property
+    def is_offline(self) -> bool:
+        return True
+
     def _init_tts(self, model_path: Optional[str] = None):
         if self._initialized:
             return
@@ -508,6 +798,10 @@ class GTTSEngine(BaseTTS):
         except ImportError:
             return False
 
+    @property
+    def is_offline(self) -> bool:
+        return False
+
     def get_voices(self, language: Optional[str] = None) -> list[VoiceInfo]:
         from gtts import lang
 
@@ -522,6 +816,7 @@ class GTTSEngine(BaseTTS):
                     name=name,
                     language=code,
                     engine=self.name,
+                    offline=False,
                 ))
         except Exception:
             pass
@@ -580,10 +875,18 @@ class GTTSEngine(BaseTTS):
 class TTSEngine:
     """
     Unified TTS interface supporting multiple backends.
+    
+    Supported engines:
+    - pyttsx3: Offline, uses system voices (pip install pyttsx3)
+    - kokoro: Offline, high-quality neural TTS (pip install kokoro)
+    - melo: Offline, multi-language TTS (pip install melo-tts)
+    - sherpa-onnx: Offline, ONNX-based TTS (pip install sherpa-onnx)
+    - edge-tts: Online, Microsoft Edge TTS (pip install edge-tts)
+    - gtts: Online, Google Translate TTS (pip install gtts)
 
     Usage:
         tts = TTSEngine()
-        result = tts.synthesize("Hello world", engine="edge-tts", language="en")
+        result = tts.synthesize("Hello world", engine="pyttsx3", language="en")
         if result.success:
             print(f"Audio saved to: {result.audio_path}")
     """
@@ -592,19 +895,29 @@ class TTSEngine:
         self._engines: dict[str, BaseTTS] = {}
         self._preferred = preferred_engine
 
+        # Register offline engines first (preferred)
         self._register_engine("pyttsx3", Pyttsx3TTS())
-        self._register_engine("edge-tts", EdgeTTS())
+        self._register_engine("kokoro", KokoroTTS())
+        self._register_engine("melo", MeloTTS())
         self._register_engine("sherpa-onnx", SherpaOnnxTTS())
+        # Online engines
+        self._register_engine("edge-tts", EdgeTTS())
         self._register_engine("gtts", GTTSEngine())
 
     def _register_engine(self, name: str, engine: BaseTTS):
         if engine.is_available:
             self._engines[name] = engine
+            logger.info(f"Registered TTS engine: {name} (offline={engine.is_offline})")
 
     @property
     def available_engines(self) -> list[str]:
         """List available TTS engine names."""
         return list(self._engines.keys())
+
+    @property
+    def offline_engines(self) -> list[str]:
+        """List offline TTS engine names."""
+        return [name for name, eng in self._engines.items() if eng.is_offline]
 
     def get_voices(
         self,
