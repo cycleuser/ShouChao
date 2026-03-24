@@ -14,6 +14,7 @@ Aggregates news from 100+ major media sources across 10 languages, converts arti
 - **News Briefings**: Daily, weekly, and domain-specific briefings with LLM summarization
 - **Three Interfaces**: CLI, GUI (tkinter), and Web (Flask) dashboard
 - **i18n**: Full 10-language UI support
+- **Stock Market Treemap**: Real-time global market heatmap (A-Share, HK, US) with sector visualization
 
 ## Requirements
 
@@ -49,24 +50,37 @@ pip install shouchao[readability] # Better content extraction
 # List available news sources
 shouchao sources --language en
 
-# Fetch news articles
-shouchao fetch --language en --max 10
+# Fetch news
+shouchao fetch --language en --max-articles 50
 
-# Search indexed news
-shouchao search "AI regulation"
-
-# Generate a daily briefing (requires Ollama)
-shouchao briefing --type daily
-
-# Analyze news for investment impact (requires Ollama)
-shouchao analyze "EU policy changes" --scenario investment
+# Generate daily briefing
+shouchao briefing --language zh --output daily_briefing.md
 
 # Start web dashboard
-shouchao web --port 5001
-
-# Launch GUI
-shouchao gui
+shouchao web
 ```
+
+### Stock Market Heatmap
+
+```bash
+# Open stock market treemap visualization
+# Access at http://localhost:5000/market
+shouchao web
+# Then navigate to /market or click "股市热力图" in sidebar
+```
+
+The heatmap shows:
+- **A-Share** (Shanghai/Shenzhen): 30+ sectors, real-time data from East Money API
+- **HK Stocks**: Major sectors and companies
+- **US Stocks**: NASDAQ/NYSE tech giants and major indices
+- **Global View**: Combined view of all markets
+
+Features:
+- Color-coded performance (Red=Up, Green=Down - China convention)
+- Market-cap weighted sizing
+- Sector grouping
+- Click for stock details
+- Real-time refresh
 
 ## Usage
 
@@ -172,7 +186,8 @@ shouchao/
 │   ├── indexer.py       # ChromaDB indexer
 │   ├── ollama_client.py # Ollama API client
 │   ├── analyzer.py      # LLM analysis engine
-│   └── briefing.py      # Briefing generator
+│   ├── briefing.py      # Briefing generator
+│   └── market_map.py    # Stock market treemap data
 ├── cli.py               # CLI interface
 ├── gui.py               # Tkinter GUI
 ├── app.py               # Flask web server

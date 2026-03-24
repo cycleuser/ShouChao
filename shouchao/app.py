@@ -15,6 +15,26 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 # Configure Flask/Werkzeug to use our logging
+def _init_tts_engine():
+    """Pre-initialize TTS engine on startup."""
+    try:
+        from shouchao.core.tts import TTSEngine, get_tts_instance, preload_tts_voices
+        logger.info("Initializing TTS engines...")
+        tts = TTSEngine()
+        engines = tts.available_engines
+        logger.info(f"Available TTS engines: {engines}")
+        
+        # Preload voices for Chinese and English
+        logger.info("Preloading TTS voices for zh and en...")
+        preload_results = preload_tts_voices(["zh", "en"])
+        logger.info(f"TTS preload results: {preload_results}")
+        
+        return tts
+    except Exception as e:
+        logger.warning(f"Failed to initialize TTS: {e}")
+        return None
+
+
 def _configure_flask_logging():
     """Configure Flask to log to stdout with unified format."""
     import logging
@@ -54,8 +74,11 @@ def create_app():
 
     from shouchao import __version__
     from shouchao.core.config import CONFIG, load_config, save_config, ensure_dirs
+    from shouchao.core.workflow import ModelConfig, get_workflow_manager
     load_config()
     ensure_dirs()
+
+    _init_tts_engine()
 
     # ---- Routes ----
 
@@ -63,6 +86,12 @@ def create_app():
     def index():
         from shouchao.i18n import TRANSLATIONS, LANGUAGES
         from dataclasses import asdict
+        from shouchao.core.workflow import ModelConfig
+        
+        # Get available workflows
+        workflow_manager = get_workflow_manager()
+        workflows = list(workflow_manager.WORKFLOWS.keys())
+        
         return render_template(
             "index.html",
             version=__version__,
@@ -70,7 +99,18 @@ def create_app():
             translations=TRANSLATIONS,
             languages=LANGUAGES,
             current_lang=CONFIG.language,
+            workflows=workflows,
         )
+
+    @app.route("/market")
+    def market_map():
+        """Stock market treemap visualization page."""
+        return render_template("market_map.html")
+
+    @app.route("/github")
+    def github_trends():
+        """GitHub Trends page."""
+        return render_template("github_trends.html")
 
     @app.route("/api/news/list")
     def api_news_list():
@@ -201,9 +241,11 @@ def create_app():
 
     @app.route("/api/briefing/from-articles", methods=["POST"])
     def api_briefing_from_articles():
-        """Generate briefing from selected articles."""
+        """Generate briefing from selected articles, GitHub repos, and stocks."""
         data = request.get_json(silent=True) or {}
         article_paths = data.get("articles", [])
+        github_repos = data.get("github_repos", [])
+        stocks = data.get("stocks", [])
         language = data.get("language", "zh")
         show_source = data.get("show_source", True)
         title = data.get("title")
@@ -221,15 +263,38 @@ def create_app():
                 storage = ArticleStorage()
                 gen = BriefingGenerator(ollama, indexer, storage)
 
-                chunks = gen.generate_from_articles(
-                    article_paths=article_paths,
-                    language=language,
-                    show_source=show_source,
-                    title=title,
-                )
+                # Generate news briefing
+                if article_paths:
+                    chunks = gen.generate_from_articles(
+                        article_paths=article_paths,
+                        language=language,
+                        show_source=show_source,
+                        title=title,
+                    )
+                    for chunk in chunks:
+                        yield _sse_data({"content": chunk})
 
-                for chunk in chunks:
-                    yield _sse_data({"content": chunk})
+                # Generate GitHub section
+                if github_repos:
+                    yield _sse_data({"content": "\n\n---\n\n## 🐙 GitHub 热门项目\n\n"})
+                    try:
+                        from shouchao.core.github_trends import analyze_github_repo
+                        for repo_name in github_repos[:5]:
+                            try:
+                                analysis = analyze_github_repo(repo_name)
+                                yield _sse_data({"content": f"### {repo_name}\n\n"})
+                                if analysis.summary:
+                                    yield _sse_data({"content": analysis.summary + "\n\n"})
+                            except Exception as e:
+                                yield _sse_data({"content": f"- {repo_name}\n\n"})
+                    except Exception as e:
+                        logger.warning(f"GitHub analysis failed: {e}")
+
+                # Generate market section
+                if stocks:
+                    yield _sse_data({"content": "\n\n---\n\n## 📊 市场行情\n\n"})
+                    yield _sse_data({"content": f"共跟踪 {len(stocks)} 只股票。\n\n"})
+
                 yield _sse_data({"done": True})
             except Exception as e:
                 yield _sse_data({"error": str(e)})
@@ -399,8 +464,11 @@ def create_app():
         language = data.get("language")
         rate = data.get("rate", 1.0)
 
-        from shouchao.api import text_to_speech
-        result = text_to_speech(
+        from shouchao.core.tts import TTSEngine, get_tts_instance
+        tts = get_tts_instance()
+        if not tts:
+            tts = TTSEngine()
+        result = tts.synthesize(
             text=text,
             engine=engine,
             voice=voice,
@@ -411,8 +479,10 @@ def create_app():
 
     @app.route("/api/tts/engines", methods=["GET"])
     def api_tts_engines():
-        from shouchao.core.tts import TTSEngine
-        tts = TTSEngine()
+        from shouchao.core.tts import TTSEngine, get_tts_instance
+        tts = get_tts_instance()
+        if not tts:
+            tts = TTSEngine()
         engines = []
         for name in tts.available_engines:
             engines.append({
@@ -426,10 +496,23 @@ def create_app():
         engine = request.args.get("engine", "edge-tts")
         language = request.args.get("language")
 
-        from shouchao.core.tts import TTSEngine
-        tts = TTSEngine(preferred_engine=engine)
+        from shouchao.core.tts import TTSEngine, get_tts_instance
+        tts = get_tts_instance()
+        if not tts:
+            tts = TTSEngine(preferred_engine=engine)
         voices = tts.get_voices(engine=engine, language=language)
         return jsonify({"voices": [v.to_dict() for v in voices]})
+
+    @app.route("/api/tts/download", methods=["POST"])
+    def api_tts_download():
+        """Download TTS models for offline use."""
+        data = request.get_json(silent=True) or {}
+        languages = data.get("languages", ["zh", "en"])
+        force = data.get("force", False)
+
+        from shouchao.core.tts import download_tts_models
+        results = download_tts_models(languages=languages, force=force)
+        return jsonify({"success": True, "results": results})
 
     @app.route("/api/export", methods=["POST"])
     def api_export():
@@ -571,6 +654,184 @@ def create_app():
 
         result = test_proxy_connection()
         return jsonify(result)
+
+    @app.route("/api/market/markets", methods=["GET"])
+    def api_market_markets():
+        """Get available markets."""
+        from shouchao.core.market_map import get_engine
+        engine = get_engine()
+        return jsonify({"markets": engine.get_markets()})
+
+    @app.route("/api/market/sectors", methods=["GET"])
+    def api_market_sectors():
+        """Get sectors for a market."""
+        market = request.args.get("market", "ashare")
+        from shouchao.core.market_map import get_engine
+        engine = get_engine()
+        return jsonify({
+            "market": market,
+            "sectors": engine.get_sectors(market),
+        })
+
+    @app.route("/api/market/map", methods=["GET"])
+    def api_market_map():
+        """Get market treemap data."""
+        market = request.args.get("market", "ashare")
+        sector = request.args.get("sector")
+        top_n = int(request.args.get("top_n", 500))
+
+        from shouchao.core.market_map import get_market_map
+        result = get_market_map(market=market, sector=sector, top_n=top_n)
+        return jsonify(result.to_dict())
+
+    @app.route("/api/github/trending", methods=["GET"])
+    def api_github_trending():
+        """Get GitHub trending repositories."""
+        since = request.args.get("since", "daily")
+        language = request.args.get("language")
+        limit = int(request.args.get("limit", 25))
+
+        from shouchao.core.github_trends import fetch_github_trending
+        repos = fetch_github_trending(since=since, language=language, limit=limit)
+        return jsonify({
+            "success": True,
+            "repos": [r.__dict__ for r in repos],
+            "count": len(repos),
+        })
+
+    @app.route("/api/github/analyze", methods=["POST"])
+    def api_github_analyze():
+        """Analyze a GitHub repository."""
+        data = request.get_json(silent=True) or {}
+        repo_name = data.get("repo", "")
+
+        if not repo_name:
+            return jsonify({"success": False, "error": "Repo name required"})
+
+        from shouchao.core.github_trends import analyze_github_repo
+        analysis = analyze_github_repo(repo_name)
+        return jsonify({
+            "success": True,
+            "analysis": analysis.__dict__,
+        })
+
+    @app.route("/api/github/wechat-article", methods=["POST"])
+    def api_github_wechat_article():
+        """Generate WeChat article for repos."""
+        data = request.get_json(silent=True) or {}
+        repos = data.get("repos", [])
+        article_type = data.get("type", "single")
+        author = data.get("author", "ShouChao")
+        period = data.get("period", "今日")
+
+        from shouchao.core.github_trends import fetch_github_trending, analyze_github_repo
+        from shouchao.core.wechat_generator import (
+            generate_wechat_article,
+            generate_trending_roundup_article,
+        )
+
+        if article_type == "roundup" and repos:
+            # Fetch trending and analyze selected
+            trending = fetch_github_trending(limit=25)
+            analyses = {}
+            for repo_name in repos[:5]:
+                analyses[repo_name] = analyze_github_repo(repo_name)
+            
+            article = generate_trending_roundup_article(
+                trending, analyses, author, period
+            )
+        elif repos:
+            # Single repo article
+            repo_name = repos[0]
+            from shouchao.core.github_trends import RepoTrend
+            demo_repo = RepoTrend(
+                rank=1,
+                name=repo_name,
+                description="",
+                language="",
+                stars=0,
+                forks=0,
+                today_stars=0,
+                url=f"https://github.com/{repo_name}",
+                built_by=[],
+            )
+            analysis = analyze_github_repo(repo_name)
+            article = generate_wechat_article(demo_repo, analysis, author)
+        else:
+            return jsonify({"success": False, "error": "No repos specified"})
+
+        return jsonify({
+            "success": True,
+            "article": article.to_dict(),
+        })
+
+    @app.route("/api/workflow/run", methods=["POST"])
+    def api_workflow_run():
+        """Run a workflow."""
+        import asyncio
+        from shouchao.core.workflow import get_workflow_manager, ModelConfig
+        
+        data = request.get_json(silent=True) or {}
+        workflow_type = data.get("type")
+        params = data.get("params", {})
+        
+        if not workflow_type:
+            return jsonify({"success": False, "error": "Workflow type required"})
+        
+        try:
+            config = ModelConfig(
+                ollama_url=CONFIG.ollama_url,
+                chat_model=CONFIG.chat_model,
+                writing_model=CONFIG.chat_model,
+                language=CONFIG.language,
+            )
+            
+            manager = get_workflow_manager(config)
+            workflow = manager.create_workflow(workflow_type, **params)
+            result = asyncio.run(manager.execute_workflow(workflow))
+            
+            return jsonify({
+                "success": True,
+                "workflow": workflow_type,
+                "results": result,
+                "status": workflow.status,
+            })
+        except Exception as e:
+            return jsonify({"success": False, "error": str(e)})
+    
+    @app.route("/api/workflow/status/<name>")
+    def api_workflow_status(name):
+        """Get workflow status."""
+        from shouchao.core.workflow import get_workflow_manager
+        
+        manager = get_workflow_manager()
+        status = manager.get_workflow_status(name)
+        return jsonify(status)
+    
+    @app.route("/api/write", methods=["POST"])
+    def api_write():
+        """Generate content using writing skill."""
+        from shouchao.core.writing_skill import get_writing_skill, WritingRequest
+        
+        req_data = request.get_json(silent=True) or {}
+        
+        writing_req = WritingRequest(
+            topic=req_data.get("topic", ""),
+            style=req_data.get("style", "wechat"),
+            content_type=req_data.get("content_type", "article"),
+            target_audience=req_data.get("audience", "general"),
+            key_points=req_data.get("key_points", []),
+            tone=req_data.get("tone", "professional"),
+            length=req_data.get("length", "medium"),
+            language=req_data.get("language", CONFIG.language),
+        )
+        
+        context = req_data.get("context", {})
+        
+        skill = get_writing_skill()
+        result = skill.write(writing_req, context)
+        
+        return jsonify(result.to_dict())
 
     @app.route("/api/audio")
     def api_audio():

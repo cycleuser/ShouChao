@@ -15,7 +15,7 @@ authors = [
 keywords = [
     "news", "aggregator", "briefing", "analysis", "investment",
     "immigration", "study-abroad", "multilingual", "rss", "chromadb",
-    "ollama", "flask", "rag",
+    "ollama", "flask", "rag", "stock-market", "treemap", "visualization",
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -52,7 +52,7 @@ playwright = ["playwright>=1.40"]
 readability = ["readability-lxml>=0.8.0"]
 gui = []
 search = ["duckduckgo-search>=4.0"]
-tts = ["edge-tts>=6.1", "pyttsx3>=2.90", "gtts>=2.3"]
+tts = ["edge-tts>=6.1", "pyttsx3>=2.90", "gtts>=2.3", "kokoro>=0.7", "soundfile>=0.12"]
 export = ["weasyprint>=60", "ebooklib>=0.18", "python-docx>=1.0", "markdown>=3.5", "pydub>=0.25"]
 all = [
     "curl-cffi>=0.7.0",
@@ -62,12 +62,16 @@ all = [
     "edge-tts>=6.1",
     "pyttsx3>=2.90",
     "gtts>=2.3",
+    "kokoro>=0.7",
+    "soundfile>=0.12",
     "weasyprint>=60",
     "ebooklib>=0.18",
     "python-docx>=1.0",
     "markdown>=3.5",
     "pydub>=0.25",
+    "plotly>=5.18",
 ]
+market = ["plotly>=5.18"]
 dev = ["pytest>=7.0", "build", "twine"]
 
 [project.scripts]

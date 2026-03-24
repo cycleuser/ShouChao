@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Trends - ShouChao</title>
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --bg-input: #334155;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --border-color: #334155;
+            --github: #f0f6fc;
+            --accent: #2f81f7;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        .header {
+            padding: 20px;
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .header h1 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 20px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            padding: 15px 20px;
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border-color);
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .control-group {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .control-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        select, input, button {
+            padding: 6px 12px;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 13px;
+        }
+
+        button {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: white;
+            cursor: pointer;
+        }
+
+        button:hover { opacity: 0.9; }
+
+        .main {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .repo-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .repo-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+
+        .repo-card:hover { border-color: var(--accent); }
+        .repo-card.selected { border-color: var(--accent); background: rgba(47, 129, 247, 0.1); }
+
+        .repo-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .repo-rank {
+            width: 28px;
+            height: 28px;
+            background: var(--accent);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .repo-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--github);
+        }
+
+        .repo-desc {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+        }
+
+        .repo-stats {
+            display: flex;
+            gap: 15px;
+            font-size: 12px;
+        }
+
+        .stat {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            color: var(--text-secondary);
+        }
+
+        .stat-value {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .stat.up { color: #3fb950; }
+
+        .sidebar {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+
+        .sidebar h3 {
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+
+        .selection-info {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 15px;
+        }
+
+        .article-preview {
+            background: var(--bg-input);
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 15px;
+            min-height: 100px;
+            font-size: 13px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: none;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .btn-primary { background: var(--accent); color: white; }
+        .btn-success { background: #238636; color: white; }
+        .btn-secondary { background: var(--bg-input); color: var(--text-primary); border: 1px solid var(--border-color); }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+
+        .checkbox {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--accent);
+        }
+
+        .article-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--github);
+        }
+
+        @media (max-width: 900px) {
+            .main { grid-template-columns: 1fr; }
+            .sidebar { position: static; }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>
+            <a href="/" style="color: var(--text-secondary); text-decoration: none; margin-right: 12px; font-size: 16px;" title="返回主页">←</a>
+            <span>🐙</span>
+            GitHub Trends
+        </h1>
+    </header>
+
+    <div class="controls">
+        <div class="control-group">
+            <span class="control-label">时间:</span>
+            <select id="sinceSelect">
+                <option value="daily">今日</option>
+                <option value="weekly">本周</option>
+                <option value="monthly">本月</option>
+            </select>
+        </div>
+        <div class="control-group">
+            <span class="control-label">语言:</span>
+            <select id="languageSelect">
+                <option value="">全部</option>
+                <option value="Python">Python</option>
+                <option value="JavaScript">JavaScript</option>
+                <option value="TypeScript">TypeScript</option>
+                <option value="Go">Go</option>
+                <option value="Rust">Rust</option>
+                <option value="Java">Java</option>
+            </select>
+        </div>
+        <button onclick="loadTrending()">刷新</button>
+        <div style="margin-left: auto; display: flex; gap: 10px;">
+            <button class="btn btn-secondary" onclick="selectAll()">全选</button>
+            <button class="btn btn-secondary" onclick="clearSelection()">清除</button>
+        </div>
+    </div>
+
+    <div class="main">
+        <div class="repo-list" id="repoList">
+            <div class="loading">加载中...</div>
+        </div>
+
+        <aside class="sidebar">
+            <h3>文章生成</h3>
+            <div class="selection-info">
+                已选 <span id="selectedCount">0</span> 个项目
+            </div>
+
+            <div class="article-preview" id="articlePreview">
+                选择项目后预览将显示在这里
+            </div>
+
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="generateArticle('single')">生成单篇</button>
+                <button class="btn btn-primary" onclick="generateArticle('roundup')">生成汇总</button>
+                <button class="btn btn-success" onclick="exportArticle()">导出</button>
+            </div>
+        </aside>
+    </div>
+
+    <script>
+        let trendingRepos = [];
+        let selectedRepos = new Set();
+        let currentArticle = null;
+
+        document.addEventListener('DOMContentLoaded', loadTrending);
+
+        function loadTrending() {
+            const since = document.getElementById('sinceSelect').value;
+            const language = document.getElementById('languageSelect').value;
+            
+            document.getElementById('repoList').innerHTML = '<div class="loading">加载中...</div>';
+            
+            const params = new URLSearchParams({ since, limit: 25 });
+            if (language) params.append('language', language);
+
+            fetch('/api/github/trending?' + params)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        trendingRepos = data.repos || [];
+                        renderRepoList();
+                    }
+                });
+        }
+
+        function renderRepoList() {
+            const container = document.getElementById('repoList');
+            
+            if (trendingRepos.length === 0) {
+                container.innerHTML = '<div class="loading">暂无数据</div>';
+                return;
+            }
+
+            container.innerHTML = trendingRepos.map((repo, i) => `
+                <div class="repo-card ${selectedRepos.has(repo.name) ? 'selected' : ''}" onclick="toggleRepo('${repo.name}')">
+                    <div class="repo-header">
+                        <div class="repo-rank">${i + 1}</div>
+                        <div class="repo-name">${repo.name}</div>
+                        <input type="checkbox" class="checkbox" 
+                            ${selectedRepos.has(repo.name) ? 'checked' : ''} 
+                            onclick="event.stopPropagation(); toggleRepo('${repo.name}')">
+                    </div>
+                    <div class="repo-desc">${repo.description || '暂无描述'}</div>
+                    <div class="repo-stats">
+                        <span class="stat">⭐ <span class="stat-value">${formatNumber(repo.stars)}</span></span>
+                        <span class="stat">🍴 <span class="stat-value">${formatNumber(repo.forks)}</span></span>
+                        <span class="stat up">📈 <span class="stat-value">+${formatNumber(repo.today_stars)}</span></span>
+                        <span class="stat">💻 ${repo.language || '-'}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function toggleRepo(name) {
+            if (selectedRepos.has(name)) {
+                selectedRepos.delete(name);
+            } else {
+                selectedRepos.add(name);
+            }
+            updateSelection();
+            renderRepoList();
+        }
+
+        function selectAll() {
+            trendingRepos.forEach(r => selectedRepos.add(r.name));
+            updateSelection();
+            renderRepoList();
+        }
+
+        function clearSelection() {
+            selectedRepos.clear();
+            updateSelection();
+            renderRepoList();
+        }
+
+        function updateSelection() {
+            document.getElementById('selectedCount').textContent = selectedRepos.size;
+        }
+
+        function generateArticle(type) {
+            if (selectedRepos.size === 0) {
+                alert('请先选择项目');
+                return;
+            }
+
+            const btn = event.target;
+            btn.disabled = true;
+            btn.textContent = '生成中...';
+
+            fetch('/api/github/wechat-article', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    repos: Array.from(selectedRepos),
+                    type: type,
+                    author: 'ShouChao',
+                    period: document.getElementById('sinceSelect').value === 'daily' ? '今日' : 
+                            document.getElementById('sinceSelect').value === 'weekly' ? '本周' : '本月'
+                })
+            })
+            .then(r => r.json())
+            .then(data => {
+                btn.disabled = false;
+                btn.textContent = type === 'single' ? '生成单篇' : '生成汇总';
+                
+                if (data.success) {
+                    currentArticle = data.article;
+                    document.getElementById('articlePreview').textContent = 
+                        `标题：${data.article.title}\n\n${data.article.summary}\n\n字数：${data.article.word_count} | 阅读时间：${data.article.read_time}分钟`;
+                    alert('文章生成成功！');
+                } else {
+                    alert('生成失败：' + data.error);
+                }
+            });
+        }
+
+        function exportArticle() {
+            if (!currentArticle) {
+                alert('请先生成文章');
+                return;
+            }
+
+            const content = `# ${currentArticle.title}
+
+**作者**: ${currentArticle.author}
+**时间**: ${new Date().toISOString().split('T')[0]}
+**字数**: ${currentArticle.word_count} | **阅读时间**: ${currentArticle.read_time} 分钟
+
+**摘要**: ${currentArticle.summary}
+
+**标签**: ${currentArticle.tags.join(', ')}
+
+---
+
+${currentArticle.content}
+`;
+
+            const blob = new Blob([content], { type: 'text/markdown' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `github_trending_${new Date().toISOString().split('T')[0]}.md`;
+            a.click();
+        }
+
+        function formatNumber(num) {
+            if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+            if (num >= 1000) return (num / 1000).toFixed(1) + 'k';
+            return num.toString();
+        }
+    </script>
+</body>
+</html>

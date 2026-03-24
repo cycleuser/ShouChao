@@ -9,45 +9,64 @@
             --primary: #6366f1;
             --primary-dark: #4f46e5;
             --primary-light: #818cf8;
-            --secondary: #64748b;
-            --success: #22c55e;
+            --primary-50: #eef2ff;
+            --success: #10b981;
+            --success-bg: #d1fae5;
             --warning: #f59e0b;
+            --warning-bg: #fef3c7;
             --danger: #ef4444;
-            --bg-dark: #0f172a;
-            --bg-card: #1e293b;
-            --bg-input: #334155;
-            --text-primary: #f1f5f9;
-            --text-secondary: #94a3b8;
-            --border-color: #334155;
-            --radius: 8px;
-        }
-
-        [data-theme="light"] {
-            --bg-dark: #f8fafc;
+            --danger-bg: #fee2e2;
+            --bg-main: #f8fafc;
+            --bg-sidebar: #ffffff;
             --bg-card: #ffffff;
-            --bg-input: #f1f5f9;
+            --bg-input: #ffffff;
+            --bg-hover: #f1f5f9;
             --text-primary: #1e293b;
             --text-secondary: #64748b;
-            --border-color: #e2e8f0;
+            --text-muted: #94a3b8;
+            --border-light: #e2e8f0;
+            --border: #cbd5e1;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            --radius: 8px;
+            --radius-lg: 12px;
+        }
+
+        [data-theme="dark"] {
+            --bg-main: #0f172a;
+            --bg-sidebar: #1e293b;
+            --bg-card: #1e293b;
+            --bg-input: #334155;
+            --bg-hover: #334155;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --border-light: #334155;
+            --border: #475569;
+            --primary-50: #1e1b4b;
+            --success-bg: #064e3b;
+            --warning-bg: #451a03;
+            --danger-bg: #450a0a;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background: var(--bg-dark);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: var(--bg-main);
             color: var(--text-primary);
-            line-height: 1.5;
+            line-height: 1.6;
             min-height: 100vh;
         }
 
         .app-container { display: flex; min-height: 100vh; }
 
         .sidebar {
-            width: 200px;
-            min-width: 200px;
-            background: var(--bg-card);
-            border-right: 1px solid var(--border-color);
+            width: 240px;
+            min-width: 240px;
+            background: var(--bg-sidebar);
+            border-right: 1px solid var(--border-light);
             position: fixed;
             top: 0; left: 0;
             height: 100vh;
@@ -56,217 +75,492 @@
             z-index: 100;
         }
 
-        .sidebar-header { padding: 16px; border-bottom: 1px solid var(--border-color); }
-        .logo { display: flex; align-items: center; gap: 10px; }
-        .logo-icon {
-            width: 32px; height: 32px;
-            background: linear-gradient(135deg, var(--primary), var(--primary-light));
-            border-radius: 8px;
-            display: flex; align-items: center; justify-content: center;
-            color: white; font-weight: bold; font-size: 14px;
+        .sidebar-header {
+            padding: 16px;
+            border-bottom: 1px solid var(--border-light);
         }
-        .logo-text h2 { font-size: 16px; }
+
+        .logo { display: flex; align-items: center; gap: 10px; }
+
+        .logo-icon {
+            width: 36px; height: 36px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-weight: 700; font-size: 16px;
+        }
+
+        .logo-text h2 { font-size: 16px; font-weight: 700; }
         .logo-text span { font-size: 11px; color: var(--text-secondary); }
 
-        .workflow-steps { padding: 12px 8px; flex: 1; overflow-y: auto; }
+        .workflow-steps { padding: 12px; flex: 1; overflow-y: auto; }
 
         .step-item {
             display: flex; align-items: center; gap: 10px;
-            padding: 10px 12px; margin: 2px 0;
-            border-radius: 6px; cursor: pointer;
-            color: var(--text-secondary); font-size: 13px;
+            padding: 10px 12px;
+            border-radius: var(--radius);
+            cursor: pointer;
+            color: var(--text-secondary);
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s ease;
         }
-        .step-item:hover { background: var(--bg-input); color: var(--text-primary); }
-        .step-item.active { background: var(--primary); color: white; }
+
+        .step-item:hover { background: var(--bg-hover); color: var(--text-primary); }
+        .step-item.active { background: var(--primary-50); color: var(--primary); }
         .step-item.completed .step-number { background: var(--success); color: white; }
 
         .step-number {
-            width: 20px; height: 20px;
-            border-radius: 50%;
-            background: var(--bg-input);
+            width: 24px; height: 24px;
+            border-radius: 6px;
+            background: var(--bg-hover);
             display: flex; align-items: center; justify-content: center;
-            font-size: 11px; font-weight: 600; flex-shrink: 0;
+            font-size: 12px; font-weight: 700;
+            flex-shrink: 0;
         }
-        .step-item.active .step-number { background: rgba(255,255,255,0.2); }
 
-        .sidebar-footer { padding: 12px; border-top: 1px solid var(--border-color); }
+        .step-item.active .step-number { background: var(--primary); color: white; }
+
+        .sidebar-footer {
+            padding: 12px;
+            border-top: 1px solid var(--border-light);
+        }
+
+        .model-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: var(--bg-hover);
+            border-radius: var(--radius);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .model-status:hover { background: var(--primary-50); }
+
+        .model-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--danger);
+        }
+
+        .model-dot.connected { background: var(--success); }
 
         .main-content {
-            margin-left: 200px;
-            padding: 20px;
-            width: calc(100% - 200px);
-            min-height: 100vh;
+            margin-left: 240px;
+            padding: 24px;
+            width: calc(100% - 240px);
+            max-width: 1200px;
         }
 
-        .page-header { margin-bottom: 20px; }
-        .page-title { font-size: 22px; font-weight: 600; }
-        .page-subtitle { color: var(--text-secondary); font-size: 13px; margin-top: 4px; }
+        .page-header { margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-start; }
+        .page-title { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+        .page-subtitle { color: var(--text-secondary); font-size: 14px; }
 
         .card {
             background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius);
-            padding: 16px;
-            margin-bottom: 12px;
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: var(--shadow-sm);
         }
-        .card-title { font-size: 14px; font-weight: 600; margin-bottom: 12px; }
 
-        .form-group { margin-bottom: 12px; }
-        .form-label { display: block; margin-bottom: 4px; font-size: 12px; color: var(--text-secondary); }
-        .form-input, .form-select, .form-textarea {
-            width: 100%; padding: 8px 10px;
+        .card-title {
+            font-size: 15px; font-weight: 600;
+            margin-bottom: 16px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .card-title::before {
+            content: "";
+            width: 3px; height: 16px;
+            background: var(--primary);
+            border-radius: 2px;
+        }
+
+        .form-group { margin-bottom: 14px; }
+        .form-label { display: block; margin-bottom: 6px; font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+        .form-input, .form-select {
+            width: 100%; padding: 8px 12px;
             background: var(--bg-input);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            color: var(--text-primary); font-size: 13px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            color: var(--text-primary);
+            font-size: 13px;
         }
-        .form-input:focus, .form-select:focus { outline: none; border-color: var(--primary); }
-        .form-textarea { resize: vertical; min-height: 80px; font-family: inherit; }
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px var(--primary-50);
+        }
         .form-row { display: flex; gap: 12px; }
-        .form-row .form-group { flex: 1; }
-
-        .checkbox-group { display: flex; align-items: center; gap: 8px; padding: 6px 0; }
-        .checkbox-group input { width: 16px; height: 16px; accent-color: var(--primary); }
-        .checkbox-group label { font-size: 13px; cursor: pointer; }
+        .form-row .form-group { flex: 1; margin-bottom: 0; }
 
         .btn {
-            display: inline-flex; align-items: center; gap: 6px;
-            padding: 8px 16px; border-radius: 6px; border: none;
-            font-size: 13px; font-weight: 500; cursor: pointer;
-            transition: background 0.2s; white-space: nowrap;
+            display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+            padding: 8px 16px;
+            border-radius: var(--radius);
+            border: none;
+            font-size: 13px; font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
         }
         .btn-primary { background: var(--primary); color: white; }
         .btn-primary:hover { background: var(--primary-dark); }
-        .btn-secondary { background: var(--bg-input); color: var(--text-primary); border: 1px solid var(--border-color); }
-        .btn-secondary:hover { background: var(--border-color); }
+        .btn-secondary { background: var(--bg-input); color: var(--text-primary); border: 1px solid var(--border); }
+        .btn-secondary:hover { background: var(--bg-hover); }
         .btn-success { background: var(--success); color: white; }
-        .btn-warning { background: var(--warning); color: white; }
-        .btn-danger { background: var(--danger); color: white; }
         .btn-sm { padding: 6px 12px; font-size: 12px; }
-        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
-        .btn-group { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+        .btn-lg { padding: 12px 24px; font-size: 14px; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-group { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+
+        .badge {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 11px; font-weight: 600;
+        }
+        .badge-success { background: var(--success-bg); color: var(--success); }
+        .badge-warning { background: var(--warning-bg); color: var(--warning); }
+        .badge-danger { background: var(--danger-bg); color: var(--danger); }
+
+        /* 素材来源卡片 */
+        .source-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .source-card {
+            background: var(--bg-card);
+            border: 2px solid var(--border-light);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .source-card:hover { border-color: var(--primary-light); transform: translateY(-2px); }
+        .source-card.selected { border-color: var(--primary); background: var(--primary-50); }
+
+        .source-card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .source-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .source-icon.news { background: linear-gradient(135deg, #3b82f6, #60a5fa); }
+        .source-icon.github { background: linear-gradient(135deg, #1f2937, #4b5563); }
+        .source-icon.market { background: linear-gradient(135deg, #10b981, #34d399); }
+
+        .source-title { font-size: 16px; font-weight: 700; }
+        .source-desc { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+
+        .source-content {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border-light);
+            display: none;
+        }
+
+        .source-card.selected .source-content { display: block; }
+
+        .source-check {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--bg-hover);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .source-card.selected .source-check {
+            background: var(--primary);
+            color: white;
+        }
 
         /* 文章列表 */
         .article-list {
             max-height: 400px;
             overflow-y: auto;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius);
         }
+
         .article-item {
-            display: flex; align-items: flex-start; gap: 10px;
-            padding: 10px 12px;
-            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px;
+            border-bottom: 1px solid var(--border-light);
             cursor: pointer;
         }
+
         .article-item:last-child { border-bottom: none; }
-        .article-item:hover { background: var(--bg-input); }
-        .article-item.selected { background: rgba(99, 102, 241, 0.1); }
-        .article-checkbox { width: 18px; height: 18px; accent-color: var(--primary); margin-top: 2px; }
+        .article-item:hover { background: var(--bg-hover); }
+        .article-item.selected { background: var(--primary-50); }
+
+        .article-checkbox { width: 16px; height: 16px; accent-color: var(--primary); margin-top: 2px; flex-shrink: 0; }
         .article-info { flex: 1; min-width: 0; }
-        .article-title { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .article-meta { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+        .article-title { font-size: 13px; font-weight: 600; line-height: 1.4; }
+        .article-meta { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
 
-        .stats-row {
-            display: flex; gap: 12px;
+        /* GitHub 趋势项 */
+        .github-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
             padding: 12px;
-            background: var(--bg-input);
-            border-radius: 6px;
-            margin-bottom: 12px;
-        }
-        .stat-item { text-align: center; }
-        .stat-value { font-size: 18px; font-weight: 700; }
-        .stat-label { font-size: 11px; color: var(--text-secondary); }
-
-        .briefing-output {
-            background: var(--bg-input);
-            border-radius: 6px;
-            padding: 12px;
-            min-height: 200px;
-            max-height: 400px;
-            overflow-y: auto;
-            white-space: pre-wrap;
-            font-size: 13px;
-            line-height: 1.6;
+            border-bottom: 1px solid var(--border-light);
+            cursor: pointer;
         }
 
-        .progress-log {
-            background: var(--bg-input);
-            border-radius: 6px;
-            padding: 10px;
-            font-family: monospace;
-            font-size: 11px;
-            max-height: 100px;
-            overflow-y: auto;
-            white-space: pre-wrap;
-        }
+        .github-item:hover { background: var(--bg-hover); }
+        .github-item.selected { background: var(--primary-50); }
 
-        .status-bar {
-            padding: 8px 12px;
-            background: var(--bg-input);
+        .github-rank {
+            width: 28px;
+            height: 28px;
             border-radius: 6px;
-            margin-top: 8px;
+            background: var(--bg-hover);
+            display: flex;
+            align-items: center;
+            justify-content: center;
             font-size: 12px;
+            font-weight: 700;
+            flex-shrink: 0;
         }
-        .status-success { color: var(--success); }
-        .status-error { color: var(--danger); }
-        .status-warning { color: var(--warning); }
 
-        .audio-player { width: 100%; margin-top: 10px; }
-        .hidden { display: none !important; }
-        .loading::after {
-            content: "";
-            display: inline-block;
-            width: 12px; height: 12px;
-            border: 2px solid var(--border-color);
+        .github-rank.top3 { background: linear-gradient(135deg, #fbbf24, #f59e0b); color: white; }
+
+        .github-info { flex: 1; min-width: 0; }
+        .github-name { font-size: 13px; font-weight: 600; color: var(--primary); }
+        .github-desc { font-size: 11px; color: var(--text-secondary); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .github-stats { font-size: 11px; color: var(--text-muted); margin-top: 4px; display: flex; gap: 12px; }
+
+        /* 股票项 */
+        .stock-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 8px;
+        }
+
+        .stock-item {
+            padding: 10px;
+            border-radius: var(--radius);
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s;
+        }
+
+        .stock-item:hover { transform: scale(1.02); }
+        .stock-item.up { background: var(--success-bg); }
+        .stock-item.down { background: var(--danger-bg); }
+
+        .stock-name { font-size: 12px; font-weight: 600; }
+        .stock-change { font-size: 14px; font-weight: 700; margin-top: 4px; }
+        .stock-item.up .stock-change { color: var(--success); }
+        .stock-item.down .stock-change { color: var(--danger); }
+
+        /* 简报输出 */
+        .briefing-output {
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            min-height: 400px;
+            max-height: 600px;
+            overflow-y: auto;
+            font-size: 14px;
+            line-height: 1.8;
+        }
+
+        .briefing-output h1 { font-size: 24px; font-weight: 700; margin: 0 0 16px 0; padding-bottom: 12px; border-bottom: 2px solid var(--primary); }
+        .briefing-output h2 { font-size: 18px; font-weight: 600; margin: 24px 0 12px 0; padding-bottom: 6px; border-bottom: 1px solid var(--border-light); }
+        .briefing-output h3 { font-size: 16px; font-weight: 600; margin: 20px 0 10px 0; }
+        .briefing-output p { margin: 12px 0; }
+        .briefing-output strong { font-weight: 600; color: var(--primary); }
+        .briefing-output ul, .briefing-output ol { margin: 12px 0; padding-left: 24px; }
+        .briefing-output li { margin: 6px 0; }
+        .briefing-output blockquote { margin: 16px 0; padding: 12px 16px; border-left: 3px solid var(--primary); background: var(--primary-50); border-radius: 0 var(--radius) var(--radius) 0; }
+        .briefing-output code { background: var(--bg-hover); padding: 2px 6px; border-radius: 4px; font-size: 12px; }
+
+        /* TTS 内容预览 */
+        .tts-preview {
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius);
+            padding: 16px;
+            min-height: 120px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-size: 14px;
+            line-height: 1.7;
+        }
+        
+        .tts-preview h1 { font-size: 18px; font-weight: 700; margin: 0 0 12px 0; color: var(--primary); }
+        .tts-preview h2 { font-size: 16px; font-weight: 600; margin: 16px 0 8px 0; }
+        .tts-preview h3 { font-size: 14px; font-weight: 600; margin: 12px 0 6px 0; }
+        .tts-preview p { margin: 8px 0; }
+        .tts-preview strong { font-weight: 600; color: var(--primary); }
+        .tts-preview ul, .tts-preview ol { margin: 8px 0; padding-left: 20px; }
+        .tts-preview li { margin: 4px 0; }
+        .tts-preview blockquote { margin: 12px 0; padding: 8px 12px; border-left: 3px solid var(--primary); background: var(--primary-50); border-radius: 0 var(--radius) var(--radius) 0; }
+        .tts-preview code { background: var(--bg-hover); padding: 2px 4px; border-radius: 3px; font-size: 12px; }
+        .tts-preview hr { border: none; border-top: 1px solid var(--border-light); margin: 16px 0; }
+        
+        .tts-toolbar {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        
+        .tts-toolbar .btn-sm {
+            padding: 4px 10px;
+            font-size: 11px;
+        }
+
+        /* 进度条 */
+        .progress-bar {
+            height: 6px;
+            background: var(--bg-hover);
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 12px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--primary-light));
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+
+        .progress-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .progress-spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--border);
             border-top-color: var(--primary);
             border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-left: 6px;
+            animation: spin 0.8s linear infinite;
         }
+
         @keyframes spin { to { transform: rotate(360deg); } }
+
+        .hidden { display: none !important; }
+
+        .step-content { display: none; }
+        .step-content.active { display: block; }
+
+        /* Toast */
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .toast {
+            padding: 12px 20px;
+            border-radius: var(--radius);
+            margin-top: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            animation: slideIn 0.3s ease;
+            box-shadow: var(--shadow-md);
+        }
+
+        .toast.success { background: var(--success); color: white; }
+        .toast.error { background: var(--danger); color: white; }
+        .toast.warning { background: var(--warning); color: white; }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* 设置弹窗 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+        }
+
+        .modal {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
 
         .lang-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
             gap: 6px;
         }
+
         .lang-item {
-            display: flex; align-items: center; gap: 6px;
-            padding: 6px 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 10px;
             background: var(--bg-input);
-            border-radius: 4px;
+            border: 2px solid var(--border-light);
+            border-radius: var(--radius);
             cursor: pointer;
-            border: 2px solid transparent;
             font-size: 12px;
         }
-        .lang-item:hover { border-color: var(--primary); }
-        .lang-item.selected { border-color: var(--primary); background: rgba(99, 102, 241, 0.15); }
-        .lang-item input { display: none; }
-        .lang-check {
-            width: 14px; height: 14px;
-            border: 2px solid var(--border-color);
-            border-radius: 3px;
-            display: flex; align-items: center; justify-content: center;
-            flex-shrink: 0;
-        }
-        .lang-item.selected .lang-check { background: var(--primary); border-color: var(--primary); }
-        .lang-item.selected .lang-check::after { content: "✓"; color: white; font-size: 9px; }
 
-        .pagination {
-            display: flex; gap: 4px; margin-top: 10px; justify-content: center;
-        }
-        .page-btn {
-            padding: 4px 10px; font-size: 12px;
-            background: var(--bg-input);
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            color: var(--text-primary);
-            cursor: pointer;
-        }
-        .page-btn:hover { background: var(--border-color); }
-        .page-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
-        .page-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .lang-item:hover { border-color: var(--primary); }
+        .lang-item.selected { border-color: var(--primary); background: var(--primary-50); }
     </style>
 </head>
 <body>
@@ -285,28 +579,28 @@
             <div class="workflow-steps">
                 <div class="step-item active" data-step="1" onclick="goToStep(1)">
                     <div class="step-number">1</div>
-                    <span>模型设置</span>
+                    <span>素材来源</span>
                 </div>
                 <div class="step-item" data-step="2" onclick="goToStep(2)">
                     <div class="step-number">2</div>
-                    <span>抓取新闻</span>
+                    <span>内容选择</span>
                 </div>
                 <div class="step-item" data-step="3" onclick="goToStep(3)">
                     <div class="step-number">3</div>
-                    <span>选择新闻</span>
+                    <span>生成简报</span>
                 </div>
                 <div class="step-item" data-step="4" onclick="goToStep(4)">
                     <div class="step-number">4</div>
-                    <span>生成简报</span>
-                </div>
-                <div class="step-item" data-step="5" onclick="goToStep(5)">
-                    <div class="step-number">5</div>
-                    <span>TTS播报</span>
+                    <span>TTS 播报</span>
                 </div>
             </div>
 
             <div class="sidebar-footer">
-                <select id="langSelect" class="form-select" style="font-size: 12px;">
+                <div class="model-status" onclick="showSettingsModal()">
+                    <div class="model-dot" id="modelDot"></div>
+                    <span id="modelStatusText">检测中...</span>
+                </div>
+                <select id="langSelect" class="form-select" style="font-size: 12px; margin-top: 8px;" onchange="changeLanguage()">
                     {% for code, name in languages.items() %}
                     <option value="{{ code }}" {% if code == current_lang %}selected{% endif %}>{{ name }}</option>
                     {% endfor %}
@@ -315,185 +609,183 @@
         </nav>
 
         <main class="main-content">
-            <!-- Step 1: Model Settings -->
-            <section id="step-1" class="step-content">
+            <!-- Step 1: 素材来源 -->
+            <section id="step-1" class="step-content active">
                 <div class="page-header">
-                    <h1 class="page-title">Step 1: 模型设置</h1>
-                    <p class="page-subtitle">配置 Ollama 模型 (本地服务，无需代理)</p>
+                    <div>
+                        <h1 class="page-title">Step 1: 素材来源</h1>
+                        <p class="page-subtitle">选择内容来源，可多选</p>
+                    </div>
+                </div>
+
+                <div class="source-grid">
+                    <!-- 新闻源 -->
+                    <div class="source-card selected" data-source="news" onclick="toggleSource(this)">
+                        <div class="source-check">✓</div>
+                        <div class="source-card-header">
+                            <div class="source-icon news">📰</div>
+                            <div>
+                                <div class="source-title">新闻 RSS</div>
+                                <div class="source-desc">109 个多语言新闻源</div>
+                            </div>
+                        </div>
+                        <div class="source-content">
+                            <div class="form-group">
+                                <label class="form-label">选择语言</label>
+                                <div class="lang-grid" id="newsLangGrid">
+                                    {% for code, name in languages.items() %}
+                                    <div class="lang-item" data-lang="{{ code }}" onclick="toggleNewsLang(this, event)">
+                                        <span>{{ name }}</span>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">每源最大文章数</label>
+                                <input type="number" id="maxArticles" class="form-input" value="20" min="5" max="100" style="width: 100px;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- GitHub 趋势 -->
+                    <div class="source-card" data-source="github" onclick="toggleSource(this)">
+                        <div class="source-check"></div>
+                        <div class="source-card-header">
+                            <div class="source-icon github">🐙</div>
+                            <div>
+                                <div class="source-title">GitHub 趋势</div>
+                                <div class="source-desc">热门开源项目动态</div>
+                            </div>
+                        </div>
+                        <div class="source-content">
+                            <div class="form-group">
+                                <label class="form-label">时间范围</label>
+                                <select id="githubSince" class="form-select">
+                                    <option value="daily">今日</option>
+                                    <option value="weekly">本周</option>
+                                    <option value="monthly">本月</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">编程语言</label>
+                                <select id="githubLang" class="form-select">
+                                    <option value="">全部</option>
+                                    <option value="python">Python</option>
+                                    <option value="javascript">JavaScript</option>
+                                    <option value="typescript">TypeScript</option>
+                                    <option value="go">Go</option>
+                                    <option value="rust">Rust</option>
+                                    <option value="java">Java</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 股市热力图 -->
+                    <div class="source-card" data-source="market" onclick="toggleSource(this)">
+                        <div class="source-check"></div>
+                        <div class="source-card-header">
+                            <div class="source-icon market">📊</div>
+                            <div>
+                                <div class="source-title">股市热力图</div>
+                                <div class="source-desc">A 股市场行情概览</div>
+                            </div>
+                        </div>
+                        <div class="source-content">
+                            <div class="form-group">
+                                <label class="form-label">市场</label>
+                                <select id="marketType" class="form-select">
+                                    <option value="ashare">A 股</option>
+                                    <option value="hk">港股</option>
+                                    <option value="us">美股</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">显示数量</label>
+                                <input type="number" id="marketTopN" class="form-input" value="50" min="10" max="200" style="width: 100px;">
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="card">
-                    <h3 class="card-title">Ollama 配置</h3>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">服务地址</label>
-                            <input type="text" id="ollamaUrl" class="form-input" value="{{ config.ollama_url }}">
+                    <h3 class="card-title">已选择内容</h3>
+                    <div id="selectedStats" class="stats-row" style="display: none;">
+                        <div class="stat-item">
+                            <div class="stat-value" id="statNews">0</div>
+                            <div class="stat-label">新闻</div>
                         </div>
-                        <div class="form-group" style="flex: 0 0 auto; padding-top: 20px;">
-                            <button class="btn btn-secondary btn-sm" onclick="testOllama()">测试</button>
-                            <span id="ollamaStatus" style="margin-left: 8px; font-size: 12px;"></span>
+                        <div class="stat-item">
+                            <div class="stat-value" id="statGithub">0</div>
+                            <div class="stat-label">GitHub</div>
                         </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">聊天模型</label>
-                            <select id="chatModel" class="form-select"><option value="">加载中...</option></select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">嵌入模型</label>
-                            <select id="embedModel" class="form-select"><option value="">加载中...</option></select>
+                        <div class="stat-item">
+                            <div class="stat-value" id="statMarket">0</div>
+                            <div class="stat-label">股票</div>
                         </div>
                     </div>
-                    <button class="btn btn-secondary btn-sm" onclick="loadModels()">刷新模型</button>
-                </div>
-
-                <div class="card">
-                    <h3 class="card-title">代理设置 (仅用于网络获取)</h3>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">代理模式</label>
-                            <select id="proxyMode" class="form-select" onchange="updateProxyMode()">
-                                <option value="none" {% if config.proxy_mode == 'none' %}selected{% endif %}>不使用代理</option>
-                                <option value="system" {% if config.proxy_mode == 'system' %}selected{% endif %}>系统代理</option>
-                                <option value="manual" {% if config.proxy_mode == 'manual' %}selected{% endif %}>手动设置</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div id="proxyManual" class="form-row" {% if config.proxy_mode != 'manual' %}style="display:none"{% endif %}>
-                        <div class="form-group">
-                            <label class="form-label">HTTP/HTTPS</label>
-                            <input type="text" id="proxyHttp" class="form-input" value="{{ config.proxy_http }}" placeholder="127.0.0.1:7890">
-                        </div>
-                    </div>
+                    <p id="noSourceHint" style="color: var(--text-secondary); font-size: 13px;">请选择至少一个素材来源</p>
                 </div>
 
                 <div class="btn-group">
-                    <button class="btn btn-primary" onclick="saveAndNext(2)">保存并继续</button>
+                    <button class="btn btn-primary btn-lg" onclick="fetchContent()">📥 抓取内容</button>
                 </div>
             </section>
 
-            <!-- Step 2: Fetch News -->
-            <section id="step-2" class="step-content hidden">
+            <!-- Step 2: 内容选择 -->
+            <section id="step-2" class="step-content">
                 <div class="page-header">
-                    <h1 class="page-title">Step 2: 抓取新闻</h1>
-                    <p class="page-subtitle">可选步骤。如果已有新闻库，可直接跳到下一步</p>
-                </div>
-
-                <div class="card">
-                    <h3 class="card-title">选择语言</h3>
-                    <div class="lang-grid" id="langGrid">
-                        {% for code, name in languages.items() %}
-                        <label class="lang-item" data-lang="{{ code }}" onclick="toggleLang(this)">
-                            <span class="lang-check"></span>
-                            <span>{{ name }}</span>
-                        </label>
-                        {% endfor %}
+                    <div>
+                        <h1 class="page-title">Step 2: 内容选择</h1>
+                        <p class="page-subtitle">选择要包含在简报中的内容</p>
                     </div>
-                    <div style="margin-top: 8px;">
-                        <button class="btn btn-secondary btn-sm" onclick="selectAllLangs()">全选</button>
-                        <button class="btn btn-secondary btn-sm" onclick="clearAllLangs()">清除</button>
-                    </div>
+                    <button class="btn btn-secondary" onclick="goToStep(1)">← 返回修改来源</button>
                 </div>
 
-                <div class="card">
-                    <h3 class="card-title">抓取设置</h3>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">每源最大文章数</label>
-                            <input type="number" id="maxArticles" class="form-input" value="20" min="5" max="100">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">抓取方式</label>
-                            <select id="fetcher" class="form-select">
-                                <option value="requests">标准请求</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <h3 class="card-title">当前状态</h3>
-                    <div class="stats-row">
-                        <div class="stat-item">
-                            <div class="stat-value" id="statArticles">0</div>
-                            <div class="stat-label">文章</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-value" id="statSources">109</div>
-                            <div class="stat-label">来源</div>
-                        </div>
-                    </div>
-                    <div class="progress-log" id="fetchLog">准备就绪</div>
-                </div>
-
-                <div class="btn-group">
-                    <button class="btn btn-secondary" onclick="goToStep(1)">上一步</button>
-                    <button class="btn btn-primary" id="fetchBtn" onclick="startFetch()">开始抓取</button>
-                    <button class="btn btn-warning" onclick="goToStep(3)">跳过，使用已有新闻</button>
-                </div>
-            </section>
-
-            <!-- Step 3: Select News -->
-            <section id="step-3" class="step-content hidden">
-                <div class="page-header">
-                    <h1 class="page-title">Step 3: 选择新闻</h1>
-                    <p class="page-subtitle">选择要包含在简报中的新闻文章</p>
-                </div>
-
-                <div class="card">
-                    <h3 class="card-title">筛选条件</h3>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">开始日期</label>
-                            <input type="date" id="dateFrom" class="form-input">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">结束日期</label>
-                            <input type="date" id="dateTo" class="form-input">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">语言</label>
-                            <select id="filterLang" class="form-select">
-                                <option value="">全部</option>
-                                {% for code, name in languages.items() %}
-                                <option value="{{ code }}">{{ name }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="form-group" style="padding-top: 20px;">
-                            <button class="btn btn-primary btn-sm" onclick="loadArticles()">筛选</button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card">
+                <!-- 新闻内容 -->
+                <div class="card" id="newsSelectCard" style="display: none;">
                     <h3 class="card-title">
-                        <span>新闻列表</span>
-                        <span style="margin-left: auto; font-weight: normal; font-size: 12px; color: var(--text-secondary);">
-                            已选: <span id="selectedCount">0</span> 篇 / 共 <span id="totalCount">0</span> 篇
-                        </span>
+                        📰 新闻文章
+                        <span id="newsCount" class="badge badge-success" style="margin-left: auto;">0 篇</span>
                     </h3>
-                    <div style="margin-bottom: 10px;">
-                        <button class="btn btn-secondary btn-sm" onclick="selectAll()">全选当前页</button>
-                        <button class="btn btn-secondary btn-sm" onclick="clearSelection()">清除选择</button>
+                    <div class="btn-group" style="margin-top: 0; margin-bottom: 12px;">
+                        <button class="btn btn-secondary btn-sm" onclick="selectAllNews()">全选</button>
+                        <button class="btn btn-secondary btn-sm" onclick="deselectAllNews()">清除</button>
                     </div>
-                    <div class="article-list" id="articleList">
-                        <div style="padding: 20px; text-align: center; color: var(--text-secondary);">点击"筛选"加载文章</div>
-                    </div>
-                    <div class="pagination" id="pagination"></div>
+                    <div class="article-list" id="newsList"></div>
+                </div>
+
+                <!-- GitHub 内容 -->
+                <div class="card" id="githubSelectCard" style="display: none;">
+                    <h3 class="card-title">
+                        🐙 GitHub 趋势
+                        <span id="githubCount" class="badge badge-success" style="margin-left: auto;">0 个</span>
+                    </h3>
+                    <div id="githubList" style="max-height: 400px; overflow-y: auto;"></div>
+                </div>
+
+                <!-- 股市内容 -->
+                <div class="card" id="marketSelectCard" style="display: none;">
+                    <h3 class="card-title">
+                        📊 股市行情
+                        <span id="marketCount" class="badge badge-success" style="margin-left: auto;">0 只</span>
+                    </h3>
+                    <div id="marketList" style="max-height: 400px; overflow-y: auto;"></div>
                 </div>
 
                 <div class="btn-group">
-                    <button class="btn btn-secondary" onclick="goToStep(2)">上一步</button>
-                    <button class="btn btn-success" id="nextToBriefing" onclick="goToStep(4)" disabled>已选 0 篇，继续</button>
+                    <button class="btn btn-secondary" onclick="goToStep(1)">← 上一步</button>
+                    <button class="btn btn-primary btn-lg" id="nextToBriefing" onclick="goToStep(3)">✓ 确认选择</button>
                 </div>
             </section>
 
-            <!-- Step 4: Generate Briefing -->
-            <section id="step-4" class="step-content hidden">
+            <!-- Step 3: 生成简报 -->
+            <section id="step-3" class="step-content">
                 <div class="page-header">
-                    <h1 class="page-title">Step 4: 生成简报</h1>
-                    <p class="page-subtitle">基于选中的新闻生成简报</p>
+                    <div>
+                        <h1 class="page-title">Step 3: 生成简报</h1>
+                        <p class="page-subtitle">AI 智能生成综合简报</p>
+                    </div>
                 </div>
 
                 <div class="card">
@@ -502,60 +794,60 @@
                         <div class="form-group">
                             <label class="form-label">输出语言</label>
                             <select id="outputLang" class="form-select">
-                                {% for code, name in languages.items() %}
-                                <option value="{{ code }}" {% if code == current_lang %}selected{% endif %}>{{ name }}</option>
-                                {% endfor %}
+                                <option value="zh">中文</option>
+                                <option value="en">English</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">简报风格</label>
+                            <label class="form-label">风格</label>
                             <select id="briefingStyle" class="form-select">
-                                <option value="story">叙事风格</option>
-                                <option value="detailed">详细分析</option>
-                                <option value="brief">简要概述</option>
-                                <option value="bullet">要点列表</option>
+                                <option value="detailed">详细</option>
+                                <option value="brief">简洁</option>
+                                <option value="bullet">要点</option>
                             </select>
                         </div>
                     </div>
-                    <div class="checkbox-group">
-                        <input type="checkbox" id="showSource" checked>
-                        <label for="showSource">显示信息出处</label>
+                </div>
+
+                <div class="card">
+                    <div class="progress-bar" id="briefingProgress" style="display: none;">
+                        <div class="progress-fill" style="width: 0%;"></div>
+                    </div>
+                    <div id="briefingStatus"></div>
+                    <div class="briefing-output" id="briefingOutput">
+                        <div style="color: var(--text-secondary); text-align: center; padding: 60px;">
+                            <div style="font-size: 48px; margin-bottom: 16px;">📝</div>
+                            点击"生成简报"开始
+                        </div>
                     </div>
                 </div>
 
-                <div class="card">
-                    <h3 class="card-title">选中的文章</h3>
-                    <div id="selectedArticlesInfo" style="font-size: 13px; color: var(--text-secondary);">0 篇文章</div>
-                </div>
-
-                <div class="card">
-                    <h3 class="card-title">生成的简报</h3>
-                    <div class="briefing-output" id="briefingOutput">点击"生成简报"开始...</div>
-                    <div class="status-bar" id="briefingStatus">准备就绪</div>
-                </div>
-
                 <div class="btn-group">
-                    <button class="btn btn-secondary" onclick="goToStep(3)">上一步</button>
-                    <button class="btn btn-primary" id="generateBtn" onclick="generateBriefing()">生成简报</button>
-                    <button class="btn btn-secondary" onclick="exportBriefing()">导出</button>
-                    <button class="btn btn-success" id="nextToTTS" onclick="goToStep(5)" style="display:none;">TTS播报</button>
+                    <button class="btn btn-secondary" onclick="goToStep(2)">← 上一步</button>
+                    <button class="btn btn-primary btn-lg" id="generateBtn" onclick="generateBriefing()">✨ 生成简报</button>
+                    <button class="btn btn-secondary" id="nextToTTS" style="display: none;" onclick="goToStep(4)">继续 →</button>
                 </div>
             </section>
 
-            <!-- Step 5: TTS -->
-            <section id="step-5" class="step-content hidden">
+            <!-- Step 4: TTS 播报 -->
+            <section id="step-4" class="step-content">
                 <div class="page-header">
-                    <h1 class="page-title">Step 5: TTS播报</h1>
-                    <p class="page-subtitle">将简报转换为语音</p>
+                    <div>
+                        <h1 class="page-title">Step 4: TTS 播报</h1>
+                        <p class="page-subtitle">将简报转换为语音</p>
+                    </div>
                 </div>
 
                 <div class="card">
                     <h3 class="card-title">语音设置</h3>
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label">TTS引擎</label>
-                            <select id="ttsEngine" class="form-select" onchange="loadVoices()">
-                            </select>
+                            <label class="form-label">TTS 引擎</label>
+                            <select id="ttsEngine" class="form-select" onchange="loadVoices()"></select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">语音</label>
+                            <select id="ttsVoice" class="form-select"></select>
                         </div>
                         <div class="form-group">
                             <label class="form-label">语速</label>
@@ -570,374 +862,583 @@
 
                 <div class="card">
                     <h3 class="card-title">播报内容</h3>
-                    <textarea id="ttsContent" class="form-textarea" rows="6" placeholder="简报内容..."></textarea>
+                    <div class="tts-toolbar">
+                        <button class="btn btn-secondary btn-sm active" id="previewBtn" onclick="toggleTtsMode('preview')">📄 预览</button>
+                        <button class="btn btn-secondary btn-sm" id="editBtn" onclick="toggleTtsMode('edit')">✏️ 编辑</button>
+                    </div>
+                    <div id="ttsPreviewMode">
+                        <div id="ttsPreview" class="tts-preview">
+                            <div style="color: var(--text-secondary); text-align: center; padding: 40px;">暂无内容</div>
+                        </div>
+                    </div>
+                    <div id="ttsEditMode" style="display: none;">
+                        <textarea id="ttsContent" class="form-input" rows="8" style="resize: vertical; font-size: 13px;" placeholder="输入或粘贴要播报的内容..."></textarea>
+                    </div>
                 </div>
 
                 <div class="card">
-                    <h3 class="card-title">音频</h3>
-                    <audio id="audioPlayer" class="audio-player" controls></audio>
+                    <h3 class="card-title">音频播放</h3>
+                    <audio id="audioPlayer" controls style="width: 100%; margin-bottom: 12px;"></audio>
                     <div class="btn-group">
-                        <button class="btn btn-primary" id="ttsBtn" onclick="generateAudio()">生成音频</button>
-                        <button class="btn btn-success" id="playBtn" onclick="playAudio()" disabled>播放</button>
-                        <button class="btn btn-secondary" id="saveBtn" onclick="saveAudio()" disabled>另存为</button>
+                        <button class="btn btn-primary btn-lg" id="ttsBtn" onclick="generateAudio()">🎵 生成音频</button>
+                        <button class="btn btn-success" id="playBtn" onclick="playAudio()" disabled>▶️ 播放</button>
+                        <button class="btn btn-secondary" id="saveBtn" onclick="saveAudio()" disabled>💾 保存</button>
                     </div>
-                    <div class="status-bar" id="ttsStatus">准备就绪</div>
+                    <div id="ttsStatus" style="margin-top: 12px; font-size: 12px; color: var(--text-secondary);">准备就绪</div>
                 </div>
 
                 <div class="btn-group">
-                    <button class="btn btn-secondary" onclick="goToStep(4)">上一步</button>
-                    <button class="btn btn-success" onclick="startOver()">重新开始</button>
+                    <button class="btn btn-secondary" onclick="goToStep(3)">← 上一步</button>
+                    <button class="btn btn-success btn-lg" onclick="startOver()">🔄 重新开始</button>
                 </div>
             </section>
         </main>
     </div>
 
+    <!-- 设置弹窗 -->
+    <div class="modal-overlay hidden" id="settingsModal">
+        <div class="modal">
+            <h2 class="modal-title">⚙️ 模型设置</h2>
+            <div class="form-group">
+                <label class="form-label">Ollama 服务地址</label>
+                <div class="form-row">
+                    <input type="text" id="ollamaUrl" class="form-input" value="{{ config.ollama_url }}" placeholder="http://localhost:11434">
+                    <button class="btn btn-secondary" onclick="testOllama()">测试</button>
+                </div>
+                <span id="ollamaStatus" style="font-size: 11px;"></span>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">聊天模型</label>
+                    <select id="chatModel" class="form-select"><option value="">加载中...</option></select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">嵌入模型</label>
+                    <select id="embedModel" class="form-select"><option value="">加载中...</option></select>
+                </div>
+            </div>
+            <div class="btn-group">
+                <button class="btn btn-secondary" onclick="hideSettingsModal()">取消</button>
+                <button class="btn btn-primary" onclick="saveSettings()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container" id="toastContainer"></div>
+
     <script>
+        // 状态
         let currentStep = 1;
+        let selectedSources = ['news'];
+        let selectedNewsLangs = ['zh', 'en'];
+        let newsArticles = [];
+        let githubRepos = [];
+        let marketStocks = [];
         let selectedArticles = [];
+        let selectedRepos = [];
+        let selectedStocks = [];
         let currentBriefing = '';
         let currentAudioPath = '';
-        let selectedLangs = [];
-        let currentPage = 1;
-        let totalPages = 1;
-        let allArticles = [];
+        let modelConnected = false;
 
-        // Navigation
-        function goToStep(step) {
-            document.querySelectorAll('.step-content').forEach(s => s.classList.add('hidden'));
-            document.getElementById('step-' + step).classList.remove('hidden');
-            document.querySelectorAll('.step-item').forEach((item, i) => {
-                item.classList.remove('active');
-                if (i + 1 < step) item.classList.add('completed');
-            });
-            document.querySelector('[data-step="' + step + '"]').classList.add('active');
-            currentStep = step;
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadModels();
+            loadTtsEngines();
+            checkModelStatus();
             
-            if (step === 2) loadStats();
-            if (step === 3) { loadArticles(); }
-            if (step === 4) updateSelectedInfo();
-            if (step === 5) { document.getElementById('ttsContent').value = currentBriefing; loadTtsEngines(); }
-        }
-
-        // Language selection
-        function toggleLang(el) { el.classList.toggle('selected'); updateSelectedLangs(); }
-        function selectAllLangs() { document.querySelectorAll('.lang-item').forEach(el => el.classList.add('selected')); updateSelectedLangs(); }
-        function clearAllLangs() { document.querySelectorAll('.lang-item').forEach(el => el.classList.remove('selected')); updateSelectedLangs(); }
-        function updateSelectedLangs() {
-            selectedLangs = [];
-            document.querySelectorAll('.lang-item.selected').forEach(el => selectedLangs.push(el.dataset.lang));
-        }
-
-        // Model settings
-        function testOllama() {
-            const status = document.getElementById('ollamaStatus');
-            status.textContent = '测试中...';
-            fetch('/api/models?url=' + encodeURIComponent(document.getElementById('ollamaUrl').value))
-                .then(r => r.json())
-                .then(data => {
-                    status.innerHTML = data.available ? '<span style="color: var(--success)">✓</span>' : '<span style="color: var(--danger)">✗</span>';
-                });
-        }
-
-        function loadModels() {
-            fetch('/api/models?url=' + encodeURIComponent(document.getElementById('ollamaUrl').value))
-                .then(r => r.json())
-                .then(data => {
-                    if (data.available) {
-                        document.getElementById('chatModel').innerHTML = '<option value="">选择</option>' + data.chat_models.map(m => '<option value="' + m + '">' + m + '</option>').join('');
-                        document.getElementById('embedModel').innerHTML = '<option value="">选择</option>' + data.embedding_models.map(m => '<option value="' + m + '">' + m + '</option>').join('');
-                    }
-                });
-        }
-
-        function updateProxyMode() {
-            document.getElementById('proxyManual').style.display = document.getElementById('proxyMode').value === 'manual' ? 'flex' : 'none';
-        }
-
-        function saveAndNext(next) {
-            fetch('/api/settings', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    ollama_url: document.getElementById('ollamaUrl').value,
-                    chat_model: document.getElementById('chatModel').value,
-                    embedding_model: document.getElementById('embedModel').value,
-                    proxy_mode: document.getElementById('proxyMode').value,
-                    proxy_http: document.getElementById('proxyHttp').value,
-                })
-            }).then(() => {
-                document.querySelector('[data-step="1"]').classList.add('completed');
-                goToStep(next);
+            // 预选中文和英文
+            document.querySelectorAll('#newsLangGrid .lang-item').forEach(item => {
+                if (selectedNewsLangs.includes(item.dataset.lang)) {
+                    item.classList.add('selected');
+                }
             });
+        });
+
+        // 步骤导航
+        function goToStep(step) {
+            document.querySelectorAll('.step-item').forEach(item => item.classList.remove('active'));
+            document.querySelector(`.step-item[data-step="${step}"]`).classList.add('active');
+            document.querySelectorAll('.step-content').forEach(s => s.classList.remove('active'));
+            document.getElementById(`step-${step}`).classList.add('active');
+            currentStep = step;
         }
 
-        // Stats
-        function loadStats() {
-            fetch('/api/stats')
-                .then(r => r.json())
-                .then(data => {
-                    document.getElementById('statArticles').textContent = data.articles?.total || 0;
-                    document.getElementById('statSources').textContent = data.sources_count || 109;
-                });
-        }
-
-        // Fetch news
-        function startFetch() {
-            if (selectedLangs.length === 0) { alert('请选择语言'); return; }
-            const btn = document.getElementById('fetchBtn');
-            btn.disabled = true; btn.classList.add('loading');
-            const log = document.getElementById('fetchLog');
-            log.textContent = '开始抓取...\n';
-            let completed = 0;
-            selectedLangs.forEach(lang => {
-                log.textContent += '[' + lang + '] 抓取中...\n';
-                fetch('/api/news/fetch', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ language: lang, max_articles: parseInt(document.getElementById('maxArticles').value) })
-                }).then(r => r.json()).then(data => {
-                    completed++;
-                    log.textContent += '[' + lang + '] ' + (data.success ? data.data.fetched + ' 篇' : '失败') + '\n';
-                    if (completed === selectedLangs.length) {
-                        log.textContent += '\n建立索引...\n';
-                        fetch('/api/index', { method: 'POST' }).then(r => r.json()).then(idx => {
-                            log.textContent += '完成: ' + (idx.data?.indexed || 0) + ' 篇已索引\n';
-                            btn.disabled = false; btn.classList.remove('loading');
-                            loadStats();
-                        });
-                    }
-                });
-            });
-        }
-
-        // Article selection
-        function loadArticles(page = 1) {
-            currentPage = page;
-            const params = new URLSearchParams();
-            const dateFrom = document.getElementById('dateFrom').value;
-            const dateTo = document.getElementById('dateTo').value;
-            const lang = document.getElementById('filterLang').value;
-            if (dateFrom) params.append('date_from', dateFrom);
-            if (dateTo) params.append('date_to', dateTo);
-            if (lang) params.append('language', lang);
-            params.append('page', page);
-            params.append('per_page', 20);
-
-            fetch('/api/news/list?' + params.toString())
-                .then(r => r.json())
-                .then(data => {
-                    allArticles = data.articles || [];
-                    totalPages = data.pages || 1;
-                    document.getElementById('totalCount').textContent = data.total || 0;
-                    renderArticleList();
-                    renderPagination();
-                });
-        }
-
-        function renderArticleList() {
-            const container = document.getElementById('articleList');
-            if (allArticles.length === 0) {
-                container.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-secondary);">暂无文章</div>';
-                return;
+        // 素材来源选择
+        function toggleSource(el) {
+            const source = el.dataset.source;
+            if (selectedSources.includes(source)) {
+                if (selectedSources.length > 1) {
+                    selectedSources = selectedSources.filter(s => s !== source);
+                    el.classList.remove('selected');
+                }
+            } else {
+                selectedSources.push(source);
+                el.classList.add('selected');
             }
-            container.innerHTML = allArticles.map(a => 
-                '<div class="article-item ' + (selectedArticles.includes(a.path) ? 'selected' : '') + '" onclick="toggleArticle(\'' + a.path + '\')">' +
-                '<input type="checkbox" class="article-checkbox" ' + (selectedArticles.includes(a.path) ? 'checked' : '') + ' onclick="event.stopPropagation(); toggleArticle(\'' + a.path + '\')">' +
-                '<div class="article-info">' +
-                '<div class="article-title">' + (a.title || 'Untitled') + '</div>' +
-                '<div class="article-meta">' + (a.website || '') + ' · ' + (a.date || '') + '</div>' +
-                '</div></div>'
-            ).join('');
+            updateSourceStats();
         }
 
-        function renderPagination() {
-            const container = document.getElementById('pagination');
-            if (totalPages <= 1) { container.innerHTML = ''; return; }
-            let html = '';
-            if (currentPage > 1) html += '<button class="page-btn" onclick="loadArticles(' + (currentPage - 1) + ')">上一页</button>';
-            for (let i = Math.max(1, currentPage - 2); i <= Math.min(totalPages, currentPage + 2); i++) {
-                html += '<button class="page-btn ' + (i === currentPage ? 'active' : '') + '" onclick="loadArticles(' + i + ')">' + i + '</button>';
+        function toggleNewsLang(el, event) {
+            event.stopPropagation();
+            const lang = el.dataset.lang;
+            if (selectedNewsLangs.includes(lang)) {
+                selectedNewsLangs = selectedNewsLangs.filter(l => l !== lang);
+                el.classList.remove('selected');
+            } else {
+                selectedNewsLangs.push(lang);
+                el.classList.add('selected');
             }
-            if (currentPage < totalPages) html += '<button class="page-btn" onclick="loadArticles(' + (currentPage + 1) + ')">下一页</button>';
-            container.innerHTML = html;
+        }
+
+        function updateSourceStats() {
+            const stats = document.getElementById('selectedStats');
+            const hint = document.getElementById('noSourceHint');
+            if (selectedSources.length > 0) {
+                stats.style.display = 'grid';
+                hint.style.display = 'none';
+                document.getElementById('statNews').textContent = selectedSources.includes('news') ? '✓' : '-';
+                document.getElementById('statGithub').textContent = selectedSources.includes('github') ? '✓' : '-';
+                document.getElementById('statMarket').textContent = selectedSources.includes('market') ? '✓' : '-';
+            } else {
+                stats.style.display = 'none';
+                hint.style.display = 'block';
+            }
+        }
+
+        // 抓取内容
+        async function fetchContent() {
+            showToast('开始抓取内容...', 'success');
+            
+            // 抓取新闻
+            if (selectedSources.includes('news')) {
+                await fetchNews();
+            }
+            
+            // 抓取 GitHub
+            if (selectedSources.includes('github')) {
+                await fetchGithub();
+            }
+            
+            // 抓取股市
+            if (selectedSources.includes('market')) {
+                await fetchMarket();
+            }
+            
+            goToStep(2);
+        }
+
+        async function fetchNews() {
+            try {
+                const res = await fetch('/api/news/list?language=' + selectedNewsLangs[0] + '&per_page=50');
+                const data = await res.json();
+                newsArticles = data.articles || [];
+                selectedArticles = newsArticles.slice(0, 10).map(a => a.path);
+                renderNewsList();
+                showToast(`获取 ${newsArticles.length} 篇新闻`, 'success');
+            } catch (e) {
+                showToast('新闻抓取失败: ' + e.message, 'error');
+            }
+        }
+
+        async function fetchGithub() {
+            try {
+                const since = document.getElementById('githubSince').value;
+                const lang = document.getElementById('githubLang').value;
+                const res = await fetch('/api/github/trending?since=' + since + '&language=' + lang + '&limit=25');
+                const data = await res.json();
+                githubRepos = data.repos || [];
+                selectedRepos = githubRepos.slice(0, 5).map(r => r.name);
+                renderGithubList();
+                showToast(`获取 ${githubRepos.length} 个 GitHub 项目`, 'success');
+            } catch (e) {
+                showToast('GitHub 抓取失败: ' + e.message, 'error');
+            }
+        }
+
+        async function fetchMarket() {
+            try {
+                const market = document.getElementById('marketType').value;
+                const topN = document.getElementById('marketTopN').value;
+                const res = await fetch('/api/market/map?market=' + market + '&top_n=' + topN);
+                const data = await res.json();
+                marketStocks = data.data?.stocks || [];
+                selectedStocks = marketStocks.slice(0, 20).map(s => s.code);
+                renderMarketList();
+                showToast(`获取 ${marketStocks.length} 只股票数据`, 'success');
+            } catch (e) {
+                showToast('股市数据获取失败: ' + e.message, 'error');
+            }
+        }
+
+        // 渲染列表
+        function renderNewsList() {
+            const card = document.getElementById('newsSelectCard');
+            const list = document.getElementById('newsList');
+            card.style.display = 'block';
+            document.getElementById('newsCount').textContent = selectedArticles.length + ' 篇';
+            
+            list.innerHTML = newsArticles.map(a => `
+                <div class="article-item ${selectedArticles.includes(a.path) ? 'selected' : ''}" onclick="toggleArticle('${a.path}')">
+                    <input type="checkbox" class="article-checkbox" ${selectedArticles.includes(a.path) ? 'checked' : ''} onclick="event.stopPropagation()">
+                    <div class="article-info">
+                        <div class="article-title">${a.title || '无标题'}</div>
+                        <div class="article-meta">${a.website || ''} · ${a.date || ''}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderGithubList() {
+            const card = document.getElementById('githubSelectCard');
+            const list = document.getElementById('githubList');
+            card.style.display = 'block';
+            document.getElementById('githubCount').textContent = selectedRepos.length + ' 个';
+            
+            list.innerHTML = githubRepos.map((r, i) => `
+                <div class="github-item ${selectedRepos.includes(r.name) ? 'selected' : ''}" onclick="toggleRepo('${r.name}')">
+                    <div class="github-rank ${i < 3 ? 'top3' : ''}">${i + 1}</div>
+                    <div class="github-info">
+                        <div class="github-name">${r.name}</div>
+                        <div class="github-desc">${r.description || '无描述'}</div>
+                        <div class="github-stats">
+                            <span>⭐ ${r.stars?.toLocaleString() || 0}</span>
+                            <span>🔀 ${r.forks || 0}</span>
+                            <span>+${r.today_stars || 0} 今日</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderMarketList() {
+            const card = document.getElementById('marketSelectCard');
+            const list = document.getElementById('marketList');
+            card.style.display = 'block';
+            document.getElementById('marketCount').textContent = selectedStocks.length + ' 只';
+            
+            list.innerHTML = `<div class="stock-grid">${marketStocks.slice(0, 50).map(s => `
+                <div class="stock-item ${s.change >= 0 ? 'up' : 'down'}" onclick="toggleStock('${s.code}')">
+                    <div class="stock-name">${s.name || s.code}</div>
+                    <div class="stock-change">${s.change >= 0 ? '+' : ''}${(s.change || 0).toFixed(2)}%</div>
+                </div>
+            `).join('')}</div>`;
         }
 
         function toggleArticle(path) {
-            const idx = selectedArticles.indexOf(path);
-            if (idx >= 0) selectedArticles.splice(idx, 1);
-            else selectedArticles.push(path);
-            updateSelectedCount();
-            renderArticleList();
+            if (selectedArticles.includes(path)) {
+                selectedArticles = selectedArticles.filter(p => p !== path);
+            } else {
+                selectedArticles.push(path);
+            }
+            renderNewsList();
         }
 
-        function selectAll() {
-            allArticles.forEach(a => {
-                if (!selectedArticles.includes(a.path)) selectedArticles.push(a.path);
-            });
-            updateSelectedCount();
-            renderArticleList();
+        function toggleRepo(name) {
+            if (selectedRepos.includes(name)) {
+                selectedRepos = selectedRepos.filter(n => n !== name);
+            } else {
+                selectedRepos.push(name);
+            }
+            renderGithubList();
         }
 
-        function clearSelection() {
+        function toggleStock(code) {
+            if (selectedStocks.includes(code)) {
+                selectedStocks = selectedStocks.filter(c => c !== code);
+            } else {
+                selectedStocks.push(code);
+            }
+            renderMarketList();
+        }
+
+        function selectAllNews() {
+            selectedArticles = newsArticles.map(a => a.path);
+            renderNewsList();
+        }
+
+        function deselectAllNews() {
             selectedArticles = [];
-            updateSelectedCount();
-            renderArticleList();
+            renderNewsList();
         }
 
-        function updateSelectedCount() {
-            document.getElementById('selectedCount').textContent = selectedArticles.length;
-            const btn = document.getElementById('nextToBriefing');
-            btn.disabled = selectedArticles.length === 0;
-            btn.textContent = '已选 ' + selectedArticles.length + ' 篇，继续';
-        }
-
-        function updateSelectedInfo() {
-            document.getElementById('selectedArticlesInfo').textContent = selectedArticles.length + ' 篇文章';
-        }
-
-        // Briefing generation
+        // 生成简报
         function generateBriefing() {
-            if (selectedArticles.length === 0) { alert('请先选择文章'); return; }
+            if (selectedArticles.length === 0 && selectedRepos.length === 0 && selectedStocks.length === 0) {
+                showToast('请选择内容', 'warning');
+                return;
+            }
+
             const btn = document.getElementById('generateBtn');
-            btn.disabled = true; btn.textContent = '生成中...';
-            document.getElementById('briefingOutput').textContent = '正在生成...';
+            btn.disabled = true;
+            btn.textContent = '生成中...';
+
+            const progress = document.getElementById('briefingProgress');
+            const status = document.getElementById('briefingStatus');
+            const output = document.getElementById('briefingOutput');
+
+            progress.style.display = 'block';
+            status.innerHTML = '<div class="progress-status"><div class="progress-spinner"></div><span>正在生成简报...</span></div>';
+            output.innerHTML = '';
 
             fetch('/api/briefing/from-articles', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({
                     articles: selectedArticles,
+                    github_repos: selectedRepos,
+                    stocks: selectedStocks,
                     language: document.getElementById('outputLang').value,
-                    show_source: document.getElementById('showSource').checked
                 })
-            })
-            .then(response => {
+            }).then(response => {
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder();
                 let content = '';
+
                 function read() {
                     reader.read().then(({ done, value }) => {
                         if (done) {
-                            currentBriefing = content;
-                            document.getElementById('briefingOutput').textContent = content;
-                            document.getElementById('briefingStatus').innerHTML = '<span class="status-success">✓ 完成</span>';
-                            btn.disabled = false; btn.textContent = '生成简报';
+                            progress.querySelector('.progress-fill').style.width = '100%';
+                            status.innerHTML = '<span class="badge badge-success">✓ 生成完成</span>';
+                            btn.disabled = false;
+                            btn.textContent = '✨ 生成简报';
                             document.getElementById('nextToTTS').style.display = 'inline-flex';
+                            currentBriefing = content;
+                            document.getElementById('ttsContent').value = content;
+                            updateTtsPreview();
+                            showToast('简报生成成功', 'success');
                             return;
                         }
+
                         const text = decoder.decode(value);
                         text.split('\n').forEach(line => {
                             if (line.startsWith('data: ')) {
                                 try {
                                     const data = JSON.parse(line.slice(6));
-                                    if (data.content) content += data.content;
-                                    if (data.error) content = '错误: ' + data.error;
+                                    if (data.content) {
+                                        content += data.content;
+                                        output.innerHTML = renderMarkdown(content);
+                                        output.scrollTop = output.scrollHeight;
+                                    }
                                 } catch (e) {}
                             }
                         });
-                        document.getElementById('briefingOutput').textContent = content;
                         read();
                     });
                 }
                 read();
+            }).catch(err => {
+                btn.disabled = false;
+                btn.textContent = '✨ 生成简报';
+                status.innerHTML = '<span class="badge badge-danger">✗ 生成失败</span>';
+                showToast('生成失败: ' + err.message, 'error');
             });
         }
 
-        function exportBriefing() {
-            if (!currentBriefing) return;
-            const blob = new Blob([currentBriefing], { type: 'text/markdown' });
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = 'briefing_' + new Date().toISOString().slice(0, 10) + '.md';
-            a.click();
+        function renderMarkdown(text) {
+            if (!text) return '';
+            return text
+                .replace(/\r\n/g, '\n')
+                .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+                .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+                .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+                .replace(/\*\*\*(.*?)\*\*\*/gim, '<strong><em>$1</em></strong>')
+                .replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/gim, '<em>$1</em>')
+                .replace(/`([^`]+)`/gim, '<code>$1</code>')
+                .replace(/^>\s*(.*$)/gim, '<blockquote>$1</blockquote>')
+                .replace(/^- (.*$)/gim, '<li>$1</li>')
+                .replace(/\n/gim, '<br>');
         }
 
         // TTS
         function loadTtsEngines() {
-            fetch('/api/tts/engines')
-                .then(r => r.json())
-                .then(data => {
-                    const select = document.getElementById('ttsEngine');
-                    select.innerHTML = '';
-                    (data.engines || []).forEach(e => {
-                        const opt = document.createElement('option');
-                        opt.value = e.name;
-                        opt.textContent = e.name + (e.offline ? ' (离线)' : '');
-                        select.appendChild(opt);
-                    });
-                    if (select.options.length === 0) {
-                        select.innerHTML = '<option value="">无可用引擎</option>';
-                    }
+            fetch('/api/tts/engines').then(r => r.json()).then(data => {
+                const select = document.getElementById('ttsEngine');
+                select.innerHTML = '';
+                (data.engines || []).forEach(e => {
+                    const opt = document.createElement('option');
+                    opt.value = e.name;
+                    opt.textContent = e.name + (e.offline ? ' (离线)' : '');
+                    select.appendChild(opt);
                 });
+                loadVoices();
+            });
         }
 
         function loadVoices() {
-            fetch('/api/tts/voices?engine=' + document.getElementById('ttsEngine').value + '&language=' + document.getElementById('outputLang').value)
-                .then(r => r.json());
+            const engine = document.getElementById('ttsEngine').value;
+            const language = document.getElementById('outputLang').value;
+            fetch('/api/tts/voices?engine=' + encodeURIComponent(engine) + '&language=' + encodeURIComponent(language))
+                .then(r => r.json())
+                .then(data => {
+                    const select = document.getElementById('ttsVoice');
+                    select.innerHTML = '';
+                    (data.voices || []).forEach(v => {
+                        const opt = document.createElement('option');
+                        opt.value = v.id;
+                        opt.textContent = v.name + (v.gender ? ' (' + v.gender + ')' : '');
+                        select.appendChild(opt);
+                    });
+                });
         }
 
         function generateAudio() {
             const text = document.getElementById('ttsContent').value.trim();
-            if (!text) { alert('没有内容'); return; }
+            if (!text) {
+                showToast('请输入内容', 'warning');
+                return;
+            }
+
             const btn = document.getElementById('ttsBtn');
-            btn.disabled = true; btn.textContent = '生成中...';
+            btn.disabled = true;
+            btn.textContent = '生成中...';
+
             fetch('/api/tts', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({
                     text: text,
                     engine: document.getElementById('ttsEngine').value,
+                    voice: document.getElementById('ttsVoice').value,
                     language: document.getElementById('outputLang').value,
                     rate: parseFloat(document.getElementById('ttsSpeed').value)
                 })
             }).then(r => r.json()).then(data => {
-                btn.disabled = false; btn.textContent = '生成音频';
+                btn.disabled = false;
+                btn.textContent = '🎵 生成音频';
                 if (data.success) {
-                    currentAudioPath = data.data.audio_path;
+                    currentAudioPath = data.audio_path || data.data?.audio_path || '';
                     document.getElementById('audioPlayer').src = '/api/audio?path=' + encodeURIComponent(currentAudioPath);
                     document.getElementById('playBtn').disabled = false;
                     document.getElementById('saveBtn').disabled = false;
-                    document.getElementById('ttsStatus').innerHTML = '<span class="status-success">✓ 音频已生成</span>';
+                    document.getElementById('ttsStatus').textContent = '✓ 音频生成成功';
+                    showToast('音频生成成功', 'success');
                 } else {
-                    document.getElementById('ttsStatus').innerHTML = '<span class="status-error">✗ ' + data.error + '</span>';
+                    document.getElementById('ttsStatus').textContent = '✗ ' + (data.error || '生成失败');
+                    showToast('生成失败', 'error');
+                }
+            }).catch(err => {
+                btn.disabled = false;
+                btn.textContent = '🎵 生成音频';
+                showToast('网络错误', 'error');
+            });
+        }
+
+        function playAudio() {
+            const player = document.getElementById('audioPlayer');
+            if (player.src) player.play();
+        }
+
+        function saveAudio() {
+            const link = document.createElement('a');
+            link.href = '/api/audio?path=' + encodeURIComponent(currentAudioPath);
+            link.download = 'briefing_' + new Date().toISOString().slice(0, 10) + '.mp3';
+            link.click();
+            showToast('保存成功', 'success');
+        }
+
+        // 模型设置
+        function checkModelStatus() {
+            fetch('/api/test-connection').then(r => r.json()).then(data => {
+                modelConnected = data.available;
+                const dot = document.getElementById('modelDot');
+                const text = document.getElementById('modelStatusText');
+                if (data.available) {
+                    dot.classList.add('connected');
+                    text.textContent = '模型已连接';
+                } else {
+                    dot.classList.remove('connected');
+                    text.textContent = '未连接';
+                    showSettingsModal();
                 }
             });
         }
 
-        function playAudio() { document.getElementById('audioPlayer').play(); }
-        function saveAudio() {
-            if (!currentAudioPath) return;
-            fetch('/api/audio?path=' + encodeURIComponent(currentAudioPath))
-                .then(r => r.blob())
-                .then(blob => {
-                    const a = document.createElement('a');
-                    a.href = URL.createObjectURL(blob);
-                    a.download = 'briefing_' + new Date().toISOString().slice(0, 10) + '.mp3';
-                    a.click();
+        function showSettingsModal() {
+            document.getElementById('settingsModal').classList.remove('hidden');
+            loadModels();
+        }
+
+        function hideSettingsModal() {
+            document.getElementById('settingsModal').classList.add('hidden');
+        }
+
+        function loadModels() {
+            const url = document.getElementById('ollamaUrl').value;
+            fetch('/api/models?url=' + encodeURIComponent(url))
+                .then(r => r.json())
+                .then(data => {
+                    const chatSelect = document.getElementById('chatModel');
+                    const embedSelect = document.getElementById('embedModel');
+                    chatSelect.innerHTML = '<option value="">请选择</option>';
+                    embedSelect.innerHTML = '<option value="">请选择</option>';
+                    (data.chat_models || []).forEach(m => {
+                        chatSelect.innerHTML += `<option value="${m}">${m}</option>`;
+                    });
+                    (data.embedding_models || []).forEach(m => {
+                        embedSelect.innerHTML += `<option value="${m}">${m}</option>`;
+                    });
                 });
+        }
+
+        function testOllama() {
+            const url = document.getElementById('ollamaUrl').value;
+            fetch('/api/test-connection')
+                .then(r => r.json())
+                .then(data => {
+                    document.getElementById('ollamaStatus').textContent = data.available ? '✓ 连接成功' : '✗ 连接失败';
+                    document.getElementById('ollamaStatus').style.color = data.available ? 'var(--success)' : 'var(--danger)';
+                });
+        }
+
+        function saveSettings() {
+            const data = {
+                ollama_url: document.getElementById('ollamaUrl').value,
+                chat_model: document.getElementById('chatModel').value,
+                embed_model: document.getElementById('embedModel').value,
+            };
+            fetch('/api/settings', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            }).then(() => {
+                hideSettingsModal();
+                checkModelStatus();
+                showToast('设置已保存', 'success');
+            });
         }
 
         function startOver() {
             selectedArticles = [];
+            selectedRepos = [];
+            selectedStocks = [];
             currentBriefing = '';
-            currentAudioPath = '';
-            document.getElementById('briefingOutput').textContent = '点击"生成简报"开始...';
+            document.getElementById('briefingOutput').innerHTML = '<div style="color: var(--text-secondary); text-align: center; padding: 60px;"><div style="font-size: 48px; margin-bottom: 16px;">📝</div>点击"生成简报"开始</div>';
             document.getElementById('ttsContent').value = '';
             document.getElementById('audioPlayer').src = '';
             document.getElementById('nextToTTS').style.display = 'none';
-            document.getElementById('playBtn').disabled = true;
-            document.getElementById('saveBtn').disabled = true;
-            document.querySelectorAll('.step-item').forEach(item => item.classList.remove('completed'));
             goToStep(1);
+            showToast('已重置', 'info');
         }
 
-        // Init
-        loadModels();
-        loadStats();
-        const today = new Date().toISOString().slice(0, 10);
-        const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-        document.getElementById('dateFrom').value = weekAgo;
-        document.getElementById('dateTo').value = today;
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = 'toast ' + type;
+            toast.textContent = message;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        function changeLanguage() {
+            const lang = document.getElementById('langSelect').value;
+            fetch('/api/settings', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ language: lang })
+            });
+        }
     </script>
 </body>
 </html>

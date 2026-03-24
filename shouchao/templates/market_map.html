@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>股市热力图 - ShouChao</title>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --bg-input: #334155;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --border-color: #334155;
+            --up-color: #ef4444;
+            --down-color: #22c55e;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 20px;
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .header h1 {
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .market-selector {
+            display: flex;
+            gap: 6px;
+        }
+
+        .market-btn {
+            padding: 6px 12px;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .market-btn:hover { background: var(--border-color); }
+        .market-btn.active { background: #6366f1; border-color: #6366f1; }
+
+        .sector-filter {
+            padding: 6px 10px;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-primary);
+            font-size: 13px;
+            min-width: 150px;
+        }
+
+        .refresh-btn {
+            padding: 6px 12px;
+            background: #6366f1;
+            border: none;
+            border-radius: 4px;
+            color: white;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .refresh-btn:hover { background: #4f46e5; }
+
+        .toolbar {
+            display: flex;
+            gap: 10px;
+            padding: 10px 20px;
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border-color);
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .toolbar-group {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .toolbar-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .view-btn {
+            padding: 4px 10px;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .view-btn.active { background: #6366f1; border-color: #6366f1; }
+
+        .time-display {
+            margin-left: auto;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .main-container {
+            display: flex;
+            height: calc(100vh - 110px);
+        }
+
+        .treemap-container {
+            flex: 1;
+            padding: 10px;
+        }
+
+        #treemap {
+            width: 100%;
+            height: 100%;
+        }
+
+        .sidebar {
+            width: 300px;
+            background: var(--bg-card);
+            border-left: 1px solid var(--border-color);
+            display: none;
+            flex-direction: column;
+        }
+
+        .sidebar.open { display: flex; }
+
+        .stock-detail {
+            padding: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .stock-detail h3 {
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        .stock-info {
+            display: grid;
+            grid-template-columns: 80px 1fr;
+            gap: 8px;
+            font-size: 13px;
+        }
+
+        .stock-info .label {
+            color: var(--text-secondary);
+        }
+
+        .stock-info .value {
+            font-weight: 600;
+        }
+
+        .stock-info .value.up { color: var(--up-color); }
+        .stock-info .value.down { color: var(--down-color); }
+
+        .legend {
+            padding: 15px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .legend h4 {
+            font-size: 13px;
+            margin-bottom: 10px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            margin-bottom: 6px;
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 3px;
+        }
+
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+
+        .loading::after {
+            content: "";
+            display: block;
+            width: 40px;
+            height: 40px;
+            margin: 0 auto 10px;
+            border: 4px solid var(--border-color);
+            border-top-color: #6366f1;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>
+            <a href="/" style="color: var(--text-secondary); text-decoration: none; margin-right: 12px; font-size: 16px;" title="返回主页">←</a>
+            <span>📊</span>
+            股市热力图
+        </h1>
+        <div class="header-controls">
+            <select id="marketSelect" class="sector-filter" onchange="loadMarketData()">
+                <option value="ashare">A 股</option>
+                <option value="hk">港股</option>
+                <option value="us">美股</option>
+                <option value="global">全球市场</option>
+            </select>
+            <select id="sectorSelect" class="sector-filter" onchange="loadMarketData()">
+                <option value="">全部板块</option>
+            </select>
+            <button class="refresh-btn" onclick="loadMarketData()">刷新</button>
+        </div>
+    </header>
+
+    <div class="toolbar">
+        <div class="toolbar-group">
+            <span class="toolbar-label">视图:</span>
+            <button class="view-btn active" onclick="setView('treemap')">热力图</button>
+            <button class="view-btn" onclick="setView('list')">列表</button>
+        </div>
+        <div class="toolbar-group">
+            <span class="toolbar-label">排序:</span>
+            <select id="sortBy" class="sector-filter" style="min-width: 100px;" onchange="updateView()">
+                <option value="market_cap">市值</option>
+                <option value="change_percent">涨跌幅</option>
+                <option value="volume">成交量</option>
+            </select>
+        </div>
+        <div class="toolbar-group">
+            <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary);">
+                <input type="checkbox" id="showLabels" checked onchange="updateView()">
+                显示标签
+            </label>
+        </div>
+        <div class="time-display" id="timeDisplay">--:--:--</div>
+    </div>
+
+    <div class="main-container">
+        <div class="treemap-container">
+            <div id="treemap"></div>
+            <div id="loading" class="loading">加载中...</div>
+        </div>
+
+        <aside class="sidebar" id="sidebar">
+            <div class="stock-detail" id="stockDetail">
+                <h3 id="detailSymbol">-</h3>
+                <div class="stock-info">
+                    <span class="label">名称:</span>
+                    <span class="value" id="detailName">-</span>
+                    <span class="label">价格:</span>
+                    <span class="value" id="detailPrice">-</span>
+                    <span class="label">涨跌:</span>
+                    <span class="value" id="detailChange">-</span>
+                    <span class="label">涨跌幅:</span>
+                    <span class="value" id="detailPercent">-</span>
+                    <span class="label">市值:</span>
+                    <span class="value" id="detailCap">-</span>
+                    <span class="label">板块:</span>
+                    <span class="value" id="detailSector">-</span>
+                </div>
+            </div>
+            <div class="legend">
+                <h4>图例</h4>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #ef4444;"></div>
+                    <span>上涨 (> 0%)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #22c55e;"></div>
+                    <span>下跌 (< 0%)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #6b7280;"></div>
+                    <span>平盘 (0%)</span>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <script>
+        let currentData = [];
+        let currentMarket = 'ashare';
+        let currentView = 'treemap';
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            updateTime();
+            setInterval(updateTime, 1000);
+            loadMarketData();
+        });
+
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('timeDisplay').textContent = now.toLocaleString('zh-CN');
+        }
+
+        function loadMarketData() {
+            const market = document.getElementById('marketSelect').value;
+            const sector = document.getElementById('sectorSelect').value;
+            currentMarket = market;
+
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('sidebar').classList.remove('open');
+
+            loadSectors(market);
+
+            const params = new URLSearchParams({ 
+                market, 
+                top_n: 500,
+                full_info: '1'
+            });
+            if (sector) params.append('sector', sector);
+
+            fetch('/api/market/map?' + params.toString())
+                .then(r => r.json())
+                .then(data => {
+                    document.getElementById('loading').classList.add('hidden');
+                    if (data.success) {
+                        currentData = data.data;
+                        renderTreemap(data);
+                    } else {
+                        alert('加载失败：' + data.error);
+                    }
+                })
+.catch(err => {
+                    document.getElementById('loading').classList.add('hidden');
+                    alert('加载错误：' + err);
+                });
+        }
+                });
+        }
+
+        function loadSectors(market) {
+            fetch('/api/market/sectors?market=' + market)
+                .then(r => r.json())
+                .then(data => {
+                    const select = document.getElementById('sectorSelect');
+                    const currentValue = select.value;
+                    select.innerHTML = '<option value="">全部板块</option>' +
+                        (data.sectors || []).map(s => '<option value="' + s + '">' + s + '</option>').join('');
+                    if (currentValue && data.sectors.includes(currentValue)) {
+                        select.value = currentValue;
+                    }
+                });
+        }
+
+        function renderTreemap(data) {
+            const sectors = data.data || [];
+            
+            // Build Plotly treemap data
+            const labels = ['Market'];
+            const parents = ['', ''];
+            const values = [0];
+            const colors = [0];
+            const customData = [''];
+
+            let totalCap = 0;
+
+            sectors.forEach(sector => {
+                // Add sector level
+                labels.push(sector.name);
+                parents.push('Market');
+                values.push(sector.value);
+                colors.push(sector.change_percent);
+                customData.push(sector.name + ' (Sector)');
+
+                if (sector.items) {
+                    sector.items.forEach(stock => {
+                        labels.push(stock.name);
+                        parents.push(sector.name);
+                        values.push(stock.value);
+                        colors.push(stock.change_percent);
+                        customData.push(
+                            stock.symbol + '|' + 
+                            stock.price + '|' + 
+                            stock.change_percent + '|' + 
+                            stock.change + '|' + 
+                            stock.sector || sector.name
+                        );
+                        totalCap += stock.value;
+                    });
+                }
+            });
+
+            // Set market cap as root value
+            values[0] = totalCap;
+
+            const trace = {
+                type: 'treemap',
+                labels: labels,
+                parents: parents,
+                values: values,
+                marker: {
+                    colors: colors,
+                    colorscale: [
+                        [0, '#22c55e'],
+                        [0.5, '#6b7280'],
+                        [1, '#ef4444']
+                    ],
+                    cmid: 0,
+                    showscale: false,
+                },
+                texttemplate: '%{label}<br>%{customdata[2]}%',
+                textposition: 'middle center',
+                insidetextfont: {
+                    family: 'Arial, sans-serif',
+                    size: 14,
+                    color: '#fff',
+                },
+                customdata: customData.map(d => d.split('|')),
+                hovertemplate: 
+                    '<b>%{label}</b><br>' +
+                    '代码：%{customdata[0]}<br>' +
+                    '价格：%{customdata[1]}<br>' +
+                    '涨跌幅：%{customdata[2]}%<br>' +
+                    '涨跌：%{customdata[3]}<br>' +
+                    '板块：%{customdata[4]}<br>' +
+                    '<extra></extra>',
+                branchvalues: 'total',
+                tiling: { packing: 'squarify' },
+            };
+
+            const layout = {
+                margin: { t: 0, l: 0, r: 0, b: 0 },
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                font: {
+                    color: '#f1f5f9',
+                    size: 12,
+                },
+                clickmode: 'event+select',
+                treemapcolorway: ['#22c55e', '#ef4444'],
+            };
+
+            const config = {
+                responsive: true,
+                displayModeBar: false,
+            };
+
+            Plotly.newPlot('treemap', [trace], layout, config);
+
+            // Handle click
+            document.getElementById('treemap').on('plotly_click', function(data) {
+                const point = data.points[0];
+                const custom = point.customdata || [];
+                
+                if (custom.length > 0 && custom[0] !== point.label) {
+                    showStockDetail({
+                        symbol: custom[0],
+                        name: point.label,
+                        price: custom[1],
+                        change_percent: custom[2],
+                        change: custom[3],
+                        sector: custom[4],
+                    });
+                }
+            });
+        }
+
+        function showStockDetail(stock) {
+            document.getElementById('detailSymbol').textContent = stock.symbol || '-';
+            document.getElementById('detailName').textContent = stock.name || '-';
+            document.getElementById('detailPrice').textContent = (stock.price || 0).toFixed(2);
+            document.getElementById('detailChange').textContent = (stock.change || 0).toFixed(2);
+            document.getElementById('detailPercent').textContent = (stock.change_percent || 0).toFixed(2) + '%';
+            document.getElementById('detailSector').textContent = stock.sector || '-';
+
+            const changeEl = document.getElementById('detailChange');
+            const percentEl = document.getElementById('detailPercent');
+            
+            changeEl.className = 'value ' + (stock.change >= 0 ? 'up' : 'down');
+            percentEl.className = 'value ' + (stock.change_percent >= 0 ? 'up' : 'down');
+
+            document.getElementById('sidebar').classList.add('open');
+        }
+
+        function setView(view) {
+            currentView = view;
+            document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+            updateView();
+        }
+
+        function updateView() {
+            if (currentData.length > 0) {
+                renderTreemap({ data: currentData });
+            }
+        }
+    </script>
+</body>
+</html>

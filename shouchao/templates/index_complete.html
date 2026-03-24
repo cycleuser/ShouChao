@@ -1,0 +1,293 @@
+        function renderArticleList() {
+            const container = document.getElementById('articleList');
+            if (allArticles.length === 0) {
+                container.innerHTML = '<div style="padding: 30px; text-align: center; color: var(--text-secondary);"><div style="font-size: 24px; margin-bottom: 8px;">📰</div>暂无文章</div>';
+                return;
+            }
+            container.innerHTML = allArticles.map((a, i) => `
+                <label class="article-item ${selectedArticles.includes(a.path) ? 'selected' : ''}">
+                    <input type="checkbox" class="article-checkbox" 
+                        data-path="${a.path}" 
+                        ${selectedArticles.includes(a.path) ? 'checked' : ''}
+                        onchange="toggleArticle(this)">
+                    <div class="article-info">
+                        <div class="article-title">${escapeHtml(a.title || 'Untitled')}</div>
+                        <div class="article-meta">${a.website || '?'} · ${a.language || '?'} · ${a.date || '?'}</div>
+                    </div>
+                </label>
+            `).join('');
+        }
+
+        function toggleArticle(checkbox) {
+            const path = checkbox.dataset.path;
+            if (checkbox.checked) {
+                if (!selectedArticles.includes(path)) selectedArticles.push(path);
+            } else {
+                selectedArticles = selectedArticles.filter(p => p !== path);
+            }
+            updateSelectedCount();
+        }
+
+        function selectAll() {
+            allArticles.forEach(a => {
+                if (!selectedArticles.includes(a.path)) selectedArticles.push(a.path);
+            });
+            document.querySelectorAll('.article-checkbox').forEach(cb => cb.checked = true);
+            updateSelectedCount();
+            showToast(`已选择 ${selectedArticles.length} 篇文章`, 'success');
+        }
+
+        function clearSelection() {
+            selectedArticles = [];
+            document.querySelectorAll('.article-checkbox').forEach(cb => cb.checked = false);
+            updateSelectedCount();
+            showToast('已清除选择', 'info');
+        }
+
+        function updateSelectedCount() {
+            document.getElementById('selectedCount').textContent = selectedArticles.length;
+            const nextBtn = document.getElementById('nextToBriefing');
+            nextBtn.disabled = selectedArticles.length === 0;
+            nextBtn.innerHTML = selectedArticles.length === 0 ? '请选择文章' : `已选 ${selectedArticles.length} 篇，继续`;
+        }
+
+        function renderPagination() {
+            const container = document.getElementById('pagination');
+            if (!container || totalPages <= 1) {
+                if (container) container.innerHTML = '';
+                return;
+            }
+            container.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; color: var(--text-secondary); font-size: 13px;">
+                    <button class="btn btn-secondary btn-sm" onclick="loadArticles(${currentPage - 1})" ${currentPage <= 1 ? 'disabled' : ''}>← 上一页</button>
+                    <span>第 ${currentPage} / ${totalPages} 页</span>
+                    <button class="btn btn-secondary btn-sm" onclick="loadArticles(${currentPage + 1})" ${currentPage >= totalPages ? 'disabled' : ''}>下一页 →</button>
+                </div>
+            `;
+        }
+
+        function updateSelectedInfo() {
+            const info = document.getElementById('selectedArticlesInfo');
+            if (info) info.textContent = `${selectedArticles.length} 篇文章`;
+        }
+
+        // Generate briefing
+        function generateBriefing() {
+            if (selectedArticles.length === 0) {
+                showToast('请先选择文章', 'warning');
+                return;
+            }
+
+            const btn = document.getElementById('generateBtn');
+            const output = document.getElementById('briefingOutput');
+            const progress = document.getElementById('briefingProgress');
+            const status = document.getElementById('briefingStatus');
+
+            btn.disabled = true;
+            btn.classList.add('loading');
+            btn.innerHTML = '<span>生成中...</span>';
+            progress.classList.remove('hidden');
+            
+            output.innerHTML = '<div style="padding: 40px; text-align: center; color: var(--text-secondary);"><div class="loading">正在生成简报...</div></div>';
+            status.textContent = '正在调用 AI 模型生成简报...';
+
+            fetch('/api/briefing/generate', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    article_paths: selectedArticles,
+                    language: document.getElementById('outputLang').value,
+                    style: document.getElementById('briefingStyle').value,
+                    show_source: document.getElementById('showSource').checked
+                })
+            })
+            .then(r => r.json())
+            .then(data => {
+                btn.disabled = false;
+                btn.classList.remove('loading');
+                btn.innerHTML = '<span>✨ 生成完成</span>';
+                progress.querySelector('.progress-fill').style.width = '100%';
+                
+                if (data.success) {
+                    currentBriefing = data.data?.content || '';
+                    output.innerHTML = '<div style="padding: 20px; line-height: 1.8;">' + formatMarkdown(currentBriefing) + '</div>';
+                    status.innerHTML = '<span class="badge badge-success">✓ 生成成功</span>';
+                    document.getElementById('nextToTTS').style.display = 'inline-flex';
+                    showToast('简报生成成功', 'success');
+                } else {
+                    output.innerHTML = '<div style="padding: 20px; color: var(--danger);">生成失败：' + (data.error || '未知错误') + '</div>';
+                    status.innerHTML = '<span class="badge badge-danger">✗ 生成失败</span>';
+                    showToast('生成失败：' + data.error, 'error');
+                }
+            })
+            .catch(err => {
+                btn.disabled = false;
+                btn.classList.remove('loading');
+                output.innerHTML = '<div style="padding: 20px; color: var(--danger);">错误：' + err.message + '</div>';
+                status.innerHTML = '<span class="badge badge-danger">✗ 错误</span>';
+                showToast('网络错误：' + err.message, 'error');
+            });
+        }
+
+        function formatMarkdown(text) {
+            return text
+                .replace(/^### (.*$)/gim, '<h3 style="font-size: 18px; font-weight: 600; margin: 20px 0 10px; color: var(--primary);">$1</h3>')
+                .replace(/^## (.*$)/gim, '<h2 style="font-size: 20px; font-weight: 700; margin: 24px 0 12px; color: var(--text-primary);">$1</h2>')
+                .replace(/^# (.*$)/gim, '<h1 style="font-size: 24px; font-weight: 700; margin: 28px 0 16px; color: var(--text-primary);">$1</h1>')
+                .replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/gim, '<em>$1</em>')
+                .replace(/^- (.*$)/gim, '<li style="margin: 8px 0; padding-left: 20px;">$1</li>')
+                .replace(/\n/gim, '<br>');
+        }
+
+        function exportBriefing() {
+            if (!currentBriefing) {
+                showToast('没有可导出的内容', 'warning');
+                return;
+            }
+            const blob = new Blob([currentBriefing], { type: 'text/markdown' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'briefing_' + new Date().toISOString().split('T')[0] + '.md';
+            a.click();
+            showToast('导出成功', 'success');
+        }
+
+        // TTS
+        function loadTtsEngines() {
+            fetch('/api/tts/engines')
+                .then(r => r.json())
+                .then(data => {
+                    const select = document.getElementById('ttsEngine');
+                    select.innerHTML = '';
+                    (data.engines || []).forEach(e => {
+                        const opt = document.createElement('option');
+                        opt.value = e.name;
+                        opt.textContent = e.name + (e.offline ? ' (离线)' : '');
+                        select.appendChild(opt);
+                    });
+                    if (select.options.length === 0) {
+                        select.innerHTML = '<option value="">无可用引擎</option>';
+                    }
+                });
+        }
+
+        function loadVoices() {
+            // Load voices for selected engine if needed
+        }
+
+        function generateAudio() {
+            const text = document.getElementById('ttsContent').value.trim();
+            if (!text) {
+                showToast('请输入播报内容', 'warning');
+                return;
+            }
+
+            const btn = document.getElementById('ttsBtn');
+            const status = document.getElementById('ttsStatus');
+            
+            btn.disabled = true;
+            btn.classList.add('loading');
+            status.textContent = '正在生成音频...';
+
+            fetch('/api/tts', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    text: text,
+                    engine: document.getElementById('ttsEngine').value,
+                    language: document.getElementById('outputLang').value,
+                    rate: parseFloat(document.getElementById('ttsSpeed').value)
+                })
+            })
+            .then(r => r.json())
+            .then(data => {
+                btn.disabled = false;
+                btn.classList.remove('loading');
+                
+                if (data.success) {
+                    currentAudioPath = data.data?.audio_path || '';
+                    document.getElementById('audioPlayer').src = '/api/audio?path=' + encodeURIComponent(currentAudioPath);
+                    document.getElementById('playBtn').disabled = false;
+                    document.getElementById('saveBtn').disabled = false;
+                    status.innerHTML = '<span class="badge badge-success">✓ 音频生成成功</span>';
+                    showToast('音频生成成功', 'success');
+                } else {
+                    status.innerHTML = '<span class="badge badge-danger">✗ 生成失败</span>';
+                    showToast('生成失败：' + data.error, 'error');
+                }
+            })
+            .catch(err => {
+                btn.disabled = false;
+                status.innerHTML = '<span class="badge badge-danger">✗ 错误</span>';
+                showToast('网络错误：' + err.message, 'error');
+            });
+        }
+
+        function playAudio() {
+            const player = document.getElementById('audioPlayer');
+            if (player.src) {
+                player.play();
+            } else {
+                showToast('请先生成音频', 'warning');
+            }
+        }
+
+        function saveAudio() {
+            const currentPath = currentAudioPath;
+            if (!currentPath) {
+                showToast('请先生成音频', 'warning');
+                return;
+            }
+            const link = document.createElement('a');
+            link.href = '/api/audio?path=' + encodeURIComponent(currentPath);
+            link.download = 'briefing_' + new Date().toISOString().split('T')[0] + '.mp3';
+            link.click();
+            showToast('保存成功', 'success');
+        }
+
+        function startOver() {
+            selectedArticles = [];
+            currentBriefing = '';
+            currentAudioPath = '';
+            document.getElementById('briefingOutput').innerHTML = '<div style="color: var(--text-secondary); text-align: center; padding: 40px;"><div style="font-size: 32px; margin-bottom: 12px;">📝</div>点击"生成简报"开始...</div>';
+            document.getElementById('ttsContent').value = '';
+            document.getElementById('audioPlayer').src = '';
+            document.getElementById('playBtn').disabled = true;
+            document.getElementById('saveBtn').disabled = true;
+            document.getElementById('nextToTTS').style.display = 'none';
+            goToStep(1);
+            showToast('已重新开始', 'info');
+        }
+
+        // Utility
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load initial models
+            loadModels();
+            
+            // Set default dates
+            const today = new Date().toISOString().split('T')[0];
+            const lastWeek = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+            document.getElementById('dateFrom').value = lastWeek;
+            document.getElementById('dateTo').value = today;
+            
+            // Keyboard shortcuts
+            document.addEventListener('keydown', function(e) {
+                if (e.ctrlKey || e.metaKey) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (currentStep < 5) goToStep(currentStep + 1);
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

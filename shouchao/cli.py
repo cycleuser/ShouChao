@@ -383,11 +383,14 @@ def cmd_sources():
                         dest="source_type", help="Filter by type")
     args = parser.parse_args()
     _apply_data_dir(args)
-    _setup_logging(args.verbose, args.quiet)
-
+    
+    # Only setup logging for non-JSON output
+    if not args.json_output:
+        _setup_logging(args.verbose, args.quiet)
+    
     from shouchao.api import list_sources
     result = list_sources(language=args.language, source_type=args.source_type)
-
+    
     def _print_text():
         if result.success:
             sources = result.data.get("sources", [])
@@ -415,7 +418,7 @@ def cmd_sources():
                           f"- {', '.join(s.get('category', []))}")
         else:
             print(f"Error: {result.error}")
-
+    
     _output(args, result.to_dict(), _print_text)
 
 
@@ -490,6 +493,8 @@ def cmd_web():
     parser.add_argument("--host", default="0.0.0.0")
     parser.add_argument("--port", type=int, default=5001)
     parser.add_argument("--debug", action="store_true")
+    parser.add_argument("--force", "-f", action="store_true",
+                        help="Force kill process using the port")
     args = parser.parse_args()
     _apply_data_dir(args)
     _setup_logging(args.verbose, args.quiet)
@@ -497,6 +502,20 @@ def cmd_web():
     from shouchao.core.config import load_config, ensure_dirs
     load_config()
     ensure_dirs()
+
+    # Check if port is in use
+    if is_port_in_use(args.port):
+        if args.force:
+            if not args.quiet:
+                print(f"⚠️  Port {args.port} is in use, attempting to free it...")
+            kill_process_on_port(args.port)
+        else:
+            print(f"❌ Port {args.port} is already in use.")
+            print(f"   Options:")
+            print(f"   1. Use a different port: shouchao web --port 5002")
+            print(f"   2. Force kill the process: shouchao web --force")
+            print(f"   3. Find and kill manually: lsof -ti:{args.port} | xargs kill -9")
+            return
 
     banner = f"""
     ╔═══════════════════════════════════════════╗
@@ -512,6 +531,46 @@ def cmd_web():
     from shouchao.app import create_app
     app = create_app()
     app.run(host=args.host, port=args.port, debug=args.debug)
+
+
+def is_port_in_use(port: int) -> bool:
+    """Check if a port is in use."""
+    import socket
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        return s.connect_ex(('localhost', port)) == 0
+
+
+def kill_process_on_port(port: int) -> bool:
+    """Kill process using the specified port."""
+    import subprocess
+    import signal
+    import os
+    
+    try:
+        # Find PID using the port
+        result = subprocess.run(
+            f"lsof -ti:{port}",
+            shell=True,
+            capture_output=True,
+            text=True
+        )
+        
+        if result.stdout.strip():
+            pids = result.stdout.strip().split('\n')
+            for pid in pids:
+                try:
+                    pid_int = int(pid)
+                    os.kill(pid_int, signal.SIGTERM)
+                    print(f"  ✓ Terminated process {pid_int}")
+                except (ValueError, OSError) as e:
+                    print(f"  ⚠ Could not terminate PID {pid}: {e}")
+            return True
+        else:
+            print(f"  ℹ No process found on port {port}")
+            return False
+    except Exception as e:
+        print(f"  ❌ Error killing process: {e}")
+        return False
 
 
 # ---------------------------------------------------------------------------

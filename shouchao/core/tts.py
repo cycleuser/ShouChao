@@ -24,8 +24,136 @@ from typing import Any, Callable, Optional, Union
 
 logger = logging.getLogger(__name__)
 
-# Default model directory for offline TTS
+# Suppress phonemizer warnings at module load
+logging.getLogger("phonemizer").setLevel(logging.ERROR)
+
 DEFAULT_TTS_MODEL_DIR = Path.home() / ".shouchao" / "tts_models"
+
+_TTS_INSTANCE: Optional["TTSEngine"] = None
+
+
+def get_tts_instance(preferred_engine: Optional[str] = None) -> Optional["TTSEngine"]:
+    """Get or create the global TTS engine instance."""
+    global _TTS_INSTANCE
+    if _TTS_INSTANCE is None:
+        try:
+            _TTS_INSTANCE = TTSEngine(preferred_engine=preferred_engine)
+            logger.info(f"TTS engine initialized with engines: {_TTS_INSTANCE.available_engines}")
+        except Exception as e:
+            logger.error(f"Failed to initialize TTS engine: {e}")
+    return _TTS_INSTANCE
+
+
+def download_tts_models(languages: Optional[list[str]] = None, force: bool = False) -> dict:
+    """
+    Download TTS models for specified languages.
+    
+    Args:
+        languages: List of language codes ('zh', 'en'). None = download all.
+        force: Force re-download even if models exist.
+    
+    Returns:
+        Dict with download status for each engine.
+    """
+    if languages is None:
+        languages = ["zh", "en"]
+    
+    results = {
+        "edge_tts": {"status": "not_needed", "message": "Online engine, no download required"},
+        "kokoro": {"status": "skipped", "message": "kokoro not installed"},
+        "pyttsx3": {"status": "not_needed", "message": "Uses system voices"},
+        "gtts": {"status": "not_needed", "message": "Online engine, no download required"},
+    }
+    
+    # Check and setup Kokoro
+    try:
+        import kokoro
+        results["kokoro"] = _download_kokoro_models(languages, force)
+    except ImportError:
+        logger.info("kokoro not installed, skipping model download")
+    
+    return results
+
+
+def _download_kokoro_models(languages: list[str], force: bool = False) -> dict:
+    """Download Kokoro TTS models for specified languages."""
+    try:
+        from kokoro import KPipeline
+        import torch
+        
+        model_dir = DEFAULT_TTS_MODEL_DIR / "kokoro"
+        model_dir.mkdir(parents=True, exist_ok=True)
+        
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        logger.info(f"Downloading Kokoro models on {device}")
+        
+        # Initialize Kokoro - this triggers automatic model download
+        pipeline = KPipeline(lang_code='a', device=device)
+        
+        # Warm up with sample text for each language to ensure models are cached
+        warmup_texts = {
+            "zh": "你好，这是一个测试。",
+            "en": "Hello, this is a test.",
+        }
+        
+        downloaded_voices = []
+        for lang in languages:
+            if lang in warmup_texts:
+                try:
+                    # Run a quick synthesis to cache models
+                    voice = "zf_xiaoyu" if lang == "zh" else "af_bella"
+                    list(pipeline(warmup_texts[lang], voice=voice))
+                    downloaded_voices.append(f"{lang}:{voice}")
+                    logger.info(f"Kokoro model cached for {lang}")
+                except Exception as e:
+                    logger.warning(f"Failed to warm up Kokoro for {lang}: {e}")
+        
+        return {
+            "status": "success",
+            "message": f"Models downloaded and cached",
+            "voices": downloaded_voices,
+            "model_dir": str(model_dir),
+        }
+    except Exception as e:
+        logger.error(f"Failed to download Kokoro models: {e}")
+        return {
+            "status": "error",
+            "message": str(e),
+        }
+
+
+def preload_tts_voices(languages: Optional[list[str]] = None) -> dict:
+    """
+    Preload TTS voices for specified languages.
+    
+    This downloads voice lists from online engines and caches offline models.
+    Call this at startup to ensure smooth first-use experience.
+    """
+    if languages is None:
+        languages = ["zh", "en"]
+    
+    results = {}
+    tts = get_tts_instance()
+    
+    if not tts:
+        return {"error": "Failed to initialize TTS engine"}
+    
+    # Preload edge-tts voices (they need to be fetched from server)
+    if "edge-tts" in tts.available_engines:
+        try:
+            for lang in languages:
+                voices = tts.get_voices(engine="edge-tts", language=lang)
+                results[f"edge-tts-{lang}"] = len(voices)
+                logger.info(f"Preloaded {len(voices)} edge-tts voices for {lang}")
+        except Exception as e:
+            results["edge-tts-error"] = str(e)
+            logger.error(f"Failed to preload edge-tts voices: {e}")
+    
+    # Download offline models
+    download_results = download_tts_models(languages)
+    results["download"] = download_results
+    
+    return results
 
 
 @dataclass
@@ -260,18 +388,30 @@ class KokoroTTS(BaseTTS):
     
     Install: pip install kokoro
     Models are downloaded automatically or can be placed in ~/.shouchao/tts_models/kokoro/
+    
+    Note: Kokoro v0.7+ uses different voice names. Available voices:
+    - English: af_bella, af_sarah, am_adam, am_michael
+    - Chinese voices may not be available in all versions
     """
 
     VOICE_MAP = {
-        "zh": ["zf_xiaoyu", "zm_yunxi"],
-        "en": ["af_bella", "am_adam"],
-        "ja": ["jf_alpha"],
+        "zh": ["af_bella"],  # Use English voice for Chinese (multilingual)
+        "en": ["af_bella", "af_sarah", "am_adam", "am_michael"],
+        "ja": ["af_bella"],
+    }
+    
+    # Default voice for each language
+    DEFAULT_VOICE = {
+        "zh": "af_bella",
+        "en": "af_bella",
+        "ja": "af_bella",
     }
 
     def __init__(self, model_dir: Optional[str] = None):
         self._model_dir = model_dir or str(DEFAULT_TTS_MODEL_DIR / "kokoro")
         self._tts = None
         self._initialized = False
+        self._pipelines = {}
 
     @property
     def name(self) -> str:
@@ -289,42 +429,69 @@ class KokoroTTS(BaseTTS):
     def is_offline(self) -> bool:
         return True
 
+    def _suppress_phonemizer_warnings(self):
+        """Suppress phonemizer warnings that appear during Chinese synthesis."""
+        import logging
+        phonemizer_logger = logging.getLogger("phonemizer")
+        phonemizer_logger.setLevel(logging.ERROR)
+
     def _init_tts(self):
         if self._initialized:
             return
         try:
-            from kokoro import KPipeline
             import torch
             
             device = "cuda" if torch.cuda.is_available() else "cpu"
             logger.info(f"Initializing Kokoro TTS on {device}")
             
-            self._tts = KPipeline(
-                lang_code='a',  # Auto-detect
-                device=device,
-            )
+            self._suppress_phonemizer_warnings()
             self._initialized = True
             logger.info("Kokoro TTS initialized successfully")
         except Exception as e:
             logger.error(f"Failed to initialize Kokoro TTS: {e}")
 
+    def _get_pipeline(self, voice: str):
+        """Get or create pipeline for specific voice language."""
+        if voice in self._pipelines:
+            return self._pipelines[voice]
+        
+        try:
+            from kokoro import KPipeline
+            import torch
+            
+            device = "cuda" if torch.cuda.is_available() else "cpu"
+            # Use 'a' for all voices (Kokoro's multilingual mode)
+            pipeline = KPipeline(lang_code='a', device=device)
+            self._pipelines[voice] = pipeline
+            return pipeline
+        except Exception as e:
+            logger.error(f"Failed to create pipeline for voice {voice}: {e}")
+            return None
+    
     def get_voices(self, language: Optional[str] = None) -> list[VoiceInfo]:
         if not self.is_available:
             return []
         
         voices = []
-        for lang, voice_ids in self.VOICE_MAP.items():
-            if language and not lang.startswith(language):
+        # Kokoro v0.7+ standard voices
+        kokoro_voices = [
+            ("af_bella", "Bella (Female)", "en", "female"),
+            ("af_sarah", "Sarah (Female)", "en", "female"),
+            ("am_adam", "Adam (Male)", "en", "male"),
+            ("am_michael", "Michael (Male)", "en", "male"),
+        ]
+        
+        for vid, vname, vlang, vgender in kokoro_voices:
+            if language and vlang != language:
                 continue
-            for vid in voice_ids:
-                voices.append(VoiceInfo(
-                    id=vid,
-                    name=vid.replace("_", " ").title(),
-                    language=lang,
-                    gender="female" if vid.startswith("zf") or vid.startswith("af") or vid.startswith("jf") else "male",
-                    engine=self.name,
-                    offline=True,
-                ))
+            voices.append(VoiceInfo(
+                id=vid,
+                name=vname,
+                language=vlang,
+                gender=vgender,
+                engine=self.name,
+                offline=True,
+            ))
         return voices
 
     def synthesize(
@@ -343,23 +510,38 @@ class KokoroTTS(BaseTTS):
             )
         
         self._init_tts()
-        if not self._tts:
+        
+        if not voice:
+            voice = "af_bella"
+        
+        pipeline = self._get_pipeline(voice)
+        if not pipeline:
             return TTSResult(
                 success=False,
                 engine=self.name,
-                error="Kokoro TTS failed to initialize",
+                error="Failed to create TTS pipeline",
             )
 
         try:
+            self._suppress_phonemizer_warnings()
             output_path = self._ensure_output_path(output_path, ".wav")
             
-            if not voice:
-                voice = "af_bella"
+            # Clean text: remove markdown formatting
+            import re
+            clean_text = text
+            clean_text = re.sub(r'#+\s*', '', clean_text)  # Remove headings
+            clean_text = re.sub(r'\*\*(.+?)\*\*', r'\1', clean_text)  # Remove bold
+            clean_text = re.sub(r'\*(.+?)\*', r'\1', clean_text)  # Remove italic
+            clean_text = re.sub(r'`(.+?)`', r'\1', clean_text)  # Remove code
+            clean_text = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', clean_text)  # Remove links
+            clean_text = re.sub(r'^\s*[-*]\s*', '', clean_text, flags=re.MULTILINE)  # Remove list markers
+            clean_text = re.sub(r'\n+', ' ', clean_text)  # Replace newlines with space
+            clean_text = re.sub(r'\s+', ' ', clean_text).strip()  # Normalize whitespace
             
             speed = 1.0 / rate if rate > 0 else 1.0
             
             audio_segments = []
-            for _, _, audio in self._tts(text, voice=voice, speed=speed):
+            for _, _, audio in pipeline(clean_text, voice=voice, speed=speed):
                 audio_segments.append(audio)
             
             if not audio_segments:
@@ -367,6 +549,7 @@ class KokoroTTS(BaseTTS):
                     success=False,
                     engine=self.name,
                     error="No audio generated",
+                    voice=voice,
                 )
             
             import numpy as np
@@ -386,7 +569,7 @@ class KokoroTTS(BaseTTS):
             )
         except Exception as e:
             logger.error(f"Kokoro TTS synthesis error: {e}")
-            return TTSResult(success=False, engine=self.name, error=str(e))
+            return TTSResult(success=False, engine=self.name, error=str(e), voice=voice or "default")
 
 
 class MeloTTS(BaseTTS):
