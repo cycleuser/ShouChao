@@ -1283,6 +1283,49 @@
                 });
         }
 
+        function toggleTtsMode(mode) {
+            const previewBtn = document.getElementById('previewBtn');
+            const editBtn = document.getElementById('editBtn');
+            const previewMode = document.getElementById('ttsPreviewMode');
+            const editMode = document.getElementById('ttsEditMode');
+            
+            if (mode === 'preview') {
+                previewBtn.classList.add('active');
+                editBtn.classList.remove('active');
+                previewMode.style.display = 'block';
+                editMode.style.display = 'none';
+                updateTtsPreview();
+            } else {
+                previewBtn.classList.remove('active');
+                editBtn.classList.add('active');
+                previewMode.style.display = 'none';
+                editMode.style.display = 'block';
+            }
+        }
+
+        function updateTtsPreview() {
+            const content = document.getElementById('ttsContent').value;
+            const preview = document.getElementById('ttsPreview');
+            
+            if (!content || !content.trim()) {
+                preview.innerHTML = '<div style="color: var(--text-secondary); text-align: center; padding: 40px;">暂无内容</div>';
+            } else {
+                preview.innerHTML = renderMarkdown(content);
+            }
+        }
+
+        // 监听编辑内容变化
+        document.addEventListener('DOMContentLoaded', function() {
+            const ttsContent = document.getElementById('ttsContent');
+            if (ttsContent) {
+                ttsContent.addEventListener('input', function() {
+                    // 延迟更新预览，避免频繁渲染
+                    clearTimeout(window._ttsPreviewTimer);
+                    window._ttsPreviewTimer = setTimeout(updateTtsPreview, 300);
+                });
+            }
+        });
+
         function generateAudio() {
             const text = document.getElementById('ttsContent').value.trim();
             if (!text) {
@@ -1416,8 +1459,12 @@
             currentBriefing = '';
             document.getElementById('briefingOutput').innerHTML = '<div style="color: var(--text-secondary); text-align: center; padding: 60px;"><div style="font-size: 48px; margin-bottom: 16px;">📝</div>点击"生成简报"开始</div>';
             document.getElementById('ttsContent').value = '';
+            document.getElementById('ttsPreview').innerHTML = '<div style="color: var(--text-secondary); text-align: center; padding: 40px;">暂无内容</div>';
             document.getElementById('audioPlayer').src = '';
+            document.getElementById('playBtn').disabled = true;
+            document.getElementById('saveBtn').disabled = true;
             document.getElementById('nextToTTS').style.display = 'none';
+            toggleTtsMode('preview');
             goToStep(1);
             showToast('已重置', 'info');
         }
