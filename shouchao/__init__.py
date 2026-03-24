@@ -6,7 +6,7 @@ converts to markdown, indexes into ChromaDB, and provides
 AI-powered briefings and analysis.
 """
 
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 
 
 def __getattr__(name):

@@ -547,6 +547,7 @@ class KokoroTTS(BaseTTS):
     def is_available(self) -> bool:
         try:
             import kokoro
+            # Don't try to download models on check - just verify import
             return True
         except ImportError:
             return False
@@ -648,7 +649,7 @@ class KokoroTTS(BaseTTS):
             output_path = self._ensure_output_path(output_path, ".wav")
             
             # Clean text for TTS - convert Markdown to plain speech-friendly text
-            clean_text = self._clean_text_for_tts(text)
+            clean_text = self.clean_text_for_tts(text)
             
             if not clean_text:
                 return TTSResult(
@@ -693,64 +694,6 @@ class KokoroTTS(BaseTTS):
                 error=str(e), 
                 voice=voice or "default"
             )
-    
-    def _clean_text_for_tts(self, text: str) -> str:
-        """Convert Markdown to speech-friendly plain text."""
-        import re
-        
-        result = text
-        
-        # Remove horizontal rules
-        result = re.sub(r'^[-]{3,}$', '', result, flags=re.MULTILINE)
-        result = re.sub(r'^[*]{3,}$', '', result, flags=re.MULTILINE)
-        
-        # Convert headers: "# 标题" → "标题"
-        result = re.sub(r'^#{1,6}\s+', '', result, flags=re.MULTILINE)
-        
-        # Convert links: "[文字](url)" → "文字"
-        result = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', result)
-        
-        # Remove bold/italic markers: "**文字**" → "文字"
-        result = re.sub(r'\*\*\*(.+?)\*\*\*', r'\1', result)
-        result = re.sub(r'\*\*(.+?)\*\*', r'\1', result)
-        result = re.sub(r'\*(.+?)\*', r'\1', result)
-        result = re.sub(r'__(.+?)__', r'\1', result)
-        result = re.sub(r'_(.+?)_', r'\1', result)
-        
-        # Remove inline code: "`代码`" → "代码"
-        result = re.sub(r'`([^`]+)`', r'\1', result)
-        
-        # Remove code blocks
-        result = re.sub(r'```[\s\S]*?```', '', result)
-        
-        # Convert list markers: "- 项目" → "项目"
-        result = re.sub(r'^[\s]*[-*+]\s+', '', result, flags=re.MULTILINE)
-        result = re.sub(r'^[\s]*\d+\.\s+', '', result, flags=re.MULTILINE)
-        
-        # Remove blockquote markers
-        result = re.sub(r'^>\s*', '', result, flags=re.MULTILINE)
-        
-        # Remove HTML tags
-        result = re.sub(r'<[^>]+>', '', result)
-        
-        # Remove URLs (standalone)
-        result = re.sub(r'https?://\S+', '', result)
-        
-        # Remove emoji (optional, some TTS can handle)
-        # result = re.sub(r'[\U00010000-\U0010ffff]', '', result)
-        
-        # Remove special markdown characters
-        result = result.replace('#', '')
-        result = result.replace('|', ' ')
-        result = result.replace('`', '')
-        
-        # Normalize whitespace
-        result = re.sub(r'\n\s*\n', '\n\n', result)
-        result = re.sub(r'\n{3,}', '\n\n', result)
-        result = re.sub(r'[ \t]+', ' ', result)
-        result = result.strip()
-        
-        return result
 
 
 class MeloTTS(BaseTTS):
@@ -1211,9 +1154,12 @@ class GTTSEngine(BaseTTS):
             if not output_path.endswith(".mp3"):
                 output_path = output_path.rsplit(".", 1)[0] + ".mp3"
 
+            # Clean Markdown formatting for TTS
+            clean_text = self.clean_text_for_tts(text)
+
             lang = voice or "en"
 
-            tts = gTTS(text=text, lang=lang, slow=rate < 0.8)
+            tts = gTTS(text=clean_text, lang=lang, slow=rate < 0.8)
             tts.save(output_path)
 
             duration = self._get_duration(output_path)
