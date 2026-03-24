@@ -843,21 +843,38 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label class="form-label">TTS 引擎</label>
-                            <select id="ttsEngine" class="form-select" onchange="loadVoices()"></select>
+                            <select id="ttsEngine" class="form-select" onchange="onEngineChange()"></select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">播报语言</label>
+                            <select id="ttsLanguage" class="form-select" onchange="loadVoices()">
+                                <option value="zh">中文</option>
+                                <option value="en">English</option>
+                                <option value="ja">日本語</option>
+                                <option value="ko">한국어</option>
+                                <option value="fr">Français</option>
+                                <option value="de">Deutsch</option>
+                                <option value="es">Español</option>
+                                <option value="it">Italiano</option>
+                                <option value="pt">Português</option>
+                                <option value="hi">हिन्दी</option>
+                            </select>
                         </div>
                         <div class="form-group">
                             <label class="form-label">语音</label>
                             <select id="ttsVoice" class="form-select"></select>
                         </div>
+                    </div>
+                    <div class="form-row">
                         <div class="form-group">
                             <label class="form-label">语速</label>
                             <select id="ttsSpeed" class="form-select">
-                                <option value="0.8">0.8x</option>
-                                <option value="1.0" selected>1.0x</option>
-                                <option value="1.2">1.2x</option>
+                                <option value="0.8">0.8x 慢速</option>
+                                <option value="1.0" selected>1.0x 正常</option>
+                                <option value="1.2">1.2x 快速</option>
+                                <option value="1.5">1.5x 极速</option>
                             </select>
                         </div>
-                    </div>
                 </div>
 
                 <div class="card">
@@ -1256,30 +1273,69 @@
             fetch('/api/tts/engines').then(r => r.json()).then(data => {
                 const select = document.getElementById('ttsEngine');
                 select.innerHTML = '';
-                (data.engines || []).forEach(e => {
+                const engines = data.engines || [];
+                if (engines.length === 0) {
+                    select.innerHTML = '<option value="">无可用引擎</option>';
+                    return;
+                }
+                engines.forEach(e => {
                     const opt = document.createElement('option');
                     opt.value = e.name;
-                    opt.textContent = e.name + (e.offline ? ' (离线)' : '');
+                    opt.textContent = e.name + (e.offline ? ' (离线)' : ' (在线)');
                     select.appendChild(opt);
                 });
                 loadVoices();
+            }).catch(err => {
+                console.error('Failed to load TTS engines:', err);
+                document.getElementById('ttsEngine').innerHTML = '<option value="">加载失败</option>';
             });
+        }
+
+        function onEngineChange() {
+            loadVoices();
         }
 
         function loadVoices() {
             const engine = document.getElementById('ttsEngine').value;
-            const language = document.getElementById('outputLang').value;
+            const language = document.getElementById('ttsLanguage').value;
+            const voiceSelect = document.getElementById('ttsVoice');
+            
+            if (!engine) {
+                voiceSelect.innerHTML = '<option value="">请选择引擎</option>';
+                return;
+            }
+            
+            voiceSelect.innerHTML = '<option value="">加载中...</option>';
+            
             fetch('/api/tts/voices?engine=' + encodeURIComponent(engine) + '&language=' + encodeURIComponent(language))
                 .then(r => r.json())
                 .then(data => {
-                    const select = document.getElementById('ttsVoice');
-                    select.innerHTML = '';
-                    (data.voices || []).forEach(v => {
+                    voiceSelect.innerHTML = '';
+                    const voices = data.voices || [];
+                    if (voices.length === 0) {
+                        voiceSelect.innerHTML = '<option value="">无可用语音</option>';
+                        return;
+                    }
+                    voices.forEach(v => {
                         const opt = document.createElement('option');
                         opt.value = v.id;
                         opt.textContent = v.name + (v.gender ? ' (' + v.gender + ')' : '');
-                        select.appendChild(opt);
+                        opt.dataset.language = v.language || '';
+                        voiceSelect.appendChild(opt);
                     });
+                    
+                    // 自动选择第一个匹配语言的语音
+                    const langPrefix = language.split('-')[0];
+                    const matchingVoice = Array.from(voiceSelect.options).find(opt => {
+                        const voiceLang = opt.dataset.language || '';
+                        return voiceLang.startsWith(langPrefix) || voiceLang.startsWith(language);
+                    });
+                    if (matchingVoice) {
+                        voiceSelect.value = matchingVoice.value;
+                    }
+                }).catch(err => {
+                    console.error('Failed to load voices:', err);
+                    voiceSelect.innerHTML = '<option value="">加载失败</option>';
                 });
         }
 
@@ -1334,8 +1390,10 @@
             }
 
             const btn = document.getElementById('ttsBtn');
+            const status = document.getElementById('ttsStatus');
             btn.disabled = true;
             btn.textContent = '生成中...';
+            status.textContent = '正在生成音频...';
 
             fetch('/api/tts', {
                 method: 'POST',
@@ -1344,7 +1402,7 @@
                     text: text,
                     engine: document.getElementById('ttsEngine').value,
                     voice: document.getElementById('ttsVoice').value,
-                    language: document.getElementById('outputLang').value,
+                    language: document.getElementById('ttsLanguage').value,
                     rate: parseFloat(document.getElementById('ttsSpeed').value)
                 })
             }).then(r => r.json()).then(data => {
@@ -1355,16 +1413,17 @@
                     document.getElementById('audioPlayer').src = '/api/audio?path=' + encodeURIComponent(currentAudioPath);
                     document.getElementById('playBtn').disabled = false;
                     document.getElementById('saveBtn').disabled = false;
-                    document.getElementById('ttsStatus').textContent = '✓ 音频生成成功';
+                    status.innerHTML = '<span class="badge badge-success">✓ 音频生成成功</span>';
                     showToast('音频生成成功', 'success');
                 } else {
-                    document.getElementById('ttsStatus').textContent = '✗ ' + (data.error || '生成失败');
-                    showToast('生成失败', 'error');
+                    status.innerHTML = '<span class="badge badge-danger">✗ ' + (data.error || '生成失败') + '</span>';
+                    showToast('生成失败: ' + (data.error || '未知错误'), 'error');
                 }
             }).catch(err => {
                 btn.disabled = false;
                 btn.textContent = '🎵 生成音频';
-                showToast('网络错误', 'error');
+                status.innerHTML = '<span class="badge badge-danger">✗ 网络错误</span>';
+                showToast('网络错误: ' + err.message, 'error');
             });
         }
 

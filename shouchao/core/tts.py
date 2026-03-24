@@ -252,6 +252,71 @@ class BaseTTS(ABC):
         import uuid
         return str(audio_dir / f"{uuid.uuid4().hex}{ext}")
 
+    @staticmethod
+    def clean_text_for_tts(text: str) -> str:
+        """Convert Markdown to speech-friendly plain text.
+        
+        Removes all Markdown formatting and converts to clean text
+        suitable for text-to-speech synthesis.
+        """
+        import re
+        
+        result = text
+        
+        # Remove horizontal rules
+        result = re.sub(r'^[-]{3,}$', '', result, flags=re.MULTILINE)
+        result = re.sub(r'^[*]{3,}$', '', result, flags=re.MULTILINE)
+        
+        # Convert headers: "# 标题" → "标题" (remove # symbols)
+        result = re.sub(r'^#{1,6}\s+', '', result, flags=re.MULTILINE)
+        
+        # Convert links: "[文字](url)" → "文字"
+        result = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', result)
+        
+        # Remove bold/italic markers
+        result = re.sub(r'\*\*\*(.+?)\*\*\*', r'\1', result)
+        result = re.sub(r'\*\*(.+?)\*\*', r'\1', result)
+        result = re.sub(r'\*(.+?)\*', r'\1', result)
+        result = re.sub(r'__(.+?)__', r'\1', result)
+        result = re.sub(r'_(.+?)_', r'\1', result)
+        
+        # Remove inline code: "`代码`" → "代码"
+        result = re.sub(r'`([^`]+)`', r'\1', result)
+        
+        # Remove code blocks
+        result = re.sub(r'```[\s\S]*?```', '', result)
+        
+        # Convert list markers: "- 项目" → "项目"
+        result = re.sub(r'^[\s]*[-*+]\s+', '', result, flags=re.MULTILINE)
+        result = re.sub(r'^[\s]*\d+\.\s+', '', result, flags=re.MULTILINE)
+        
+        # Remove blockquote markers
+        result = re.sub(r'^>\s*', '', result, flags=re.MULTILINE)
+        
+        # Remove HTML tags
+        result = re.sub(r'<[^>]+>', '', result)
+        
+        # Remove standalone URLs
+        result = re.sub(r'https?://\S+', '', result)
+        
+        # Remove special markdown characters that might be read aloud
+        result = result.replace('#', '')
+        result = result.replace('|', ' ')
+        result = result.replace('`', '')
+        result = result.replace('~', '')
+        
+        # Remove multiple consecutive spaces
+        result = re.sub(r'[ \t]+', ' ', result)
+        
+        # Normalize line breaks (keep paragraph structure)
+        result = re.sub(r'\n\s*\n', '\n\n', result)
+        result = re.sub(r'\n{3,}', '\n\n', result)
+        
+        # Strip leading/trailing whitespace
+        result = result.strip()
+        
+        return result
+
 
 class Pyttsx3TTS(BaseTTS):
     """pyttsx3 TTS engine - cross-platform offline synthesis using system voices."""
@@ -325,6 +390,9 @@ class Pyttsx3TTS(BaseTTS):
 
         try:
             output_path = self._ensure_output_path(output_path, ".mp3")
+            
+            # Clean Markdown formatting for TTS
+            clean_text = self.clean_text_for_tts(text)
 
             if voice:
                 self._engine.setProperty("voice", voice)
@@ -332,7 +400,7 @@ class Pyttsx3TTS(BaseTTS):
             rate_val = int(self._engine.getProperty("rate") * rate)
             self._engine.setProperty("rate", rate_val)
 
-            self._engine.save_to_file(text, output_path)
+            self._engine.save_to_file(clean_text, output_path)
             self._engine.runAndWait()
 
             duration = self._get_audio_duration(output_path)
@@ -381,37 +449,95 @@ class Pyttsx3TTS(BaseTTS):
 
 
 class KokoroTTS(BaseTTS):
-    """Kokoro TTS - high-quality offline neural synthesis.
+    """Kokoro TTS - High-quality offline neural synthesis supporting 10+ languages.
     
-    Uses local models from:
-    - https://huggingface.co/hexgrad/Kokoro-82M
+    Uses models from https://huggingface.co/hexgrad/Kokoro-82M
+    
+    Supported languages:
+    - Chinese (Mandarin): zf_xiaoyu, zf_emily, zm_yunxi, zm_alex
+    - English (American): af_bella, af_sarah, af_nicole, am_adam, am_michael
+    - English (British): bf_emma, bm_george
+    - Japanese: jf_alpha, jf_gongitsune, jf_nezumi, jm_kumi
+    - Korean: kf_yuna, km_min
+    - French: ff_siwon
+    - Hindi: hf_alpha, hm_omega
+    - Italian: if_sara, im_nicola
+    - Portuguese (Brazil): pf_dora, pm_alex
+    - Spanish: sf_beta, sm_santos
     
     Install: pip install kokoro
-    Models are downloaded automatically or can be placed in ~/.shouchao/tts_models/kokoro/
-    
-    Note: Kokoro v0.7+ uses different voice names. Available voices:
-    - English: af_bella, af_sarah, am_adam, am_michael
-    - Chinese voices may not be available in all versions
     """
 
-    VOICE_MAP = {
-        "zh": ["af_bella"],  # Use English voice for Chinese (multilingual)
-        "en": ["af_bella", "af_sarah", "am_adam", "am_michael"],
-        "ja": ["af_bella"],
+    # Voice definitions: (voice_id, display_name, language, language_code, gender)
+    VOICES = [
+        # Chinese (Mandarin)
+        ("zf_xiaoyu", "晓宇 (Xiaoyu)", "zh", "z", "female"),
+        ("zf_emily", "Emily (Chinese)", "zh", "z", "female"),
+        ("zm_yunxi", "云希 (Yunxi)", "zh", "z", "male"),
+        ("zm_alex", "Alex (Chinese)", "zh", "z", "male"),
+        # English (American)
+        ("af_bella", "Bella (American)", "en", "a", "female"),
+        ("af_sarah", "Sarah (American)", "en", "a", "female"),
+        ("af_nicole", "Nicole (American)", "en", "a", "female"),
+        ("am_adam", "Adam (American)", "en", "a", "male"),
+        ("am_michael", "Michael (American)", "en", "a", "male"),
+        # English (British)
+        ("bf_emma", "Emma (British)", "en", "b", "female"),
+        ("bm_george", "George (British)", "en", "b", "male"),
+        # Japanese
+        ("jf_alpha", "Alpha (Japanese)", "ja", "j", "female"),
+        ("jf_gongitsune", "Gongitsune", "ja", "j", "female"),
+        ("jf_nezumi", "Nezumi", "ja", "j", "female"),
+        ("jm_kumi", "Kumi (Japanese)", "ja", "j", "male"),
+        # Korean
+        ("kf_yuna", "Yuna (Korean)", "ko", "k", "female"),
+        ("km_min", "Min (Korean)", "ko", "k", "male"),
+        # French
+        ("ff_siwon", "Siwon (French)", "fr", "f", "female"),
+        # Hindi
+        ("hf_alpha", "Alpha (Hindi)", "hi", "h", "female"),
+        ("hm_omega", "Omega (Hindi)", "hi", "h", "male"),
+        # Italian
+        ("if_sara", "Sara (Italian)", "it", "i", "female"),
+        ("im_nicola", "Nicola (Italian)", "it", "i", "male"),
+        # Portuguese (Brazil)
+        ("pf_dora", "Dora (Portuguese)", "pt", "p", "female"),
+        ("pm_alex", "Alex (Portuguese)", "pt", "p", "male"),
+        # Spanish
+        ("sf_beta", "Beta (Spanish)", "es", "s", "female"),
+        ("sm_santos", "Santos (Spanish)", "es", "s", "male"),
+    ]
+    
+    # Default voices per language
+    DEFAULT_VOICES = {
+        "zh": "zf_xiaoyu",
+        "en": "af_bella",
+        "ja": "jf_alpha",
+        "ko": "kf_yuna",
+        "fr": "ff_siwon",
+        "hi": "hf_alpha",
+        "it": "if_sara",
+        "pt": "pf_dora",
+        "es": "sf_beta",
     }
     
-    # Default voice for each language
-    DEFAULT_VOICE = {
-        "zh": "af_bella",
-        "en": "af_bella",
-        "ja": "af_bella",
+    # Language code for Kokoro pipeline
+    LANG_CODES = {
+        "zh": "z",
+        "en": "a",  # Default to American
+        "ja": "j",
+        "ko": "k",
+        "fr": "f",
+        "hi": "h",
+        "it": "i",
+        "pt": "p",
+        "es": "s",
     }
 
     def __init__(self, model_dir: Optional[str] = None):
         self._model_dir = model_dir or str(DEFAULT_TTS_MODEL_DIR / "kokoro")
-        self._tts = None
+        self._pipelines: dict[str, Any] = {}
         self._initialized = False
-        self._pipelines = {}
 
     @property
     def name(self) -> str:
@@ -429,71 +555,59 @@ class KokoroTTS(BaseTTS):
     def is_offline(self) -> bool:
         return True
 
-    def _suppress_phonemizer_warnings(self):
-        """Suppress phonemizer warnings that appear during Chinese synthesis."""
+    def _suppress_warnings(self):
+        """Suppress various warnings."""
         import logging
-        phonemizer_logger = logging.getLogger("phonemizer")
-        phonemizer_logger.setLevel(logging.ERROR)
+        import warnings
+        logging.getLogger("phonemizer").setLevel(logging.ERROR)
+        warnings.filterwarnings("ignore", message=".*Defaulting repo_id.*")
 
-    def _init_tts(self):
-        if self._initialized:
-            return
-        try:
-            import torch
-            
-            device = "cuda" if torch.cuda.is_available() else "cpu"
-            logger.info(f"Initializing Kokoro TTS on {device}")
-            
-            self._suppress_phonemizer_warnings()
-            self._initialized = True
-            logger.info("Kokoro TTS initialized successfully")
-        except Exception as e:
-            logger.error(f"Failed to initialize Kokoro TTS: {e}")
-
-    def _get_pipeline(self, voice: str):
-        """Get or create pipeline for specific voice language."""
-        if voice in self._pipelines:
-            return self._pipelines[voice]
+    def _get_pipeline(self, lang_code: str):
+        """Get or create pipeline for a language."""
+        if lang_code in self._pipelines:
+            return self._pipelines[lang_code]
         
         try:
             from kokoro import KPipeline
             import torch
+            import warnings
             
             device = "cuda" if torch.cuda.is_available() else "cpu"
-            # Use 'a' for all voices (Kokoro's multilingual mode)
-            pipeline = KPipeline(lang_code='a', device=device)
-            self._pipelines[voice] = pipeline
+            
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                pipeline = KPipeline(
+                    lang_code=lang_code,
+                    device=device,
+                    repo_id='hexgrad/Kokoro-82M'
+                )
+            
+            self._pipelines[lang_code] = pipeline
+            logger.info(f"Created Kokoro pipeline for lang_code={lang_code}")
             return pipeline
         except Exception as e:
-            logger.error(f"Failed to create pipeline for voice {voice}: {e}")
+            logger.error(f"Failed to create Kokoro pipeline: {e}")
             return None
-    
+
     def get_voices(self, language: Optional[str] = None) -> list[VoiceInfo]:
+        """Get available voices, optionally filtered by language."""
         if not self.is_available:
             return []
         
         voices = []
-        # Kokoro v0.7+ standard voices
-        kokoro_voices = [
-            ("af_bella", "Bella (Female)", "en", "female"),
-            ("af_sarah", "Sarah (Female)", "en", "female"),
-            ("am_adam", "Adam (Male)", "en", "male"),
-            ("am_michael", "Michael (Male)", "en", "male"),
-        ]
-        
-        for vid, vname, vlang, vgender in kokoro_voices:
-            if language and vlang != language:
+        for voice_id, name, lang, lang_code, gender in self.VOICES:
+            if language and not lang.startswith(language.split('-')[0]):
                 continue
             voices.append(VoiceInfo(
-                id=vid,
-                name=vname,
-                language=vlang,
-                gender=vgender,
+                id=voice_id,
+                name=name,
+                language=lang,
+                gender=gender,
                 engine=self.name,
                 offline=True,
             ))
         return voices
-
+    
     def synthesize(
         self,
         text: str,
@@ -502,6 +616,7 @@ class KokoroTTS(BaseTTS):
         rate: float = 1.0,
         pitch: float = 1.0,
     ) -> TTSResult:
+        """Synthesize text to speech."""
         if not self.is_available:
             return TTSResult(
                 success=False,
@@ -509,34 +624,38 @@ class KokoroTTS(BaseTTS):
                 error="kokoro not installed. Install with: pip install kokoro",
             )
         
-        self._init_tts()
+        self._suppress_warnings()
         
-        if not voice:
+        # Determine language from voice
+        lang_code = "a"
+        if voice:
+            for vid, _, lang, lc, _ in self.VOICES:
+                if vid == voice:
+                    lang_code = lc
+                    break
+        else:
             voice = "af_bella"
         
-        pipeline = self._get_pipeline(voice)
+        pipeline = self._get_pipeline(lang_code)
         if not pipeline:
             return TTSResult(
                 success=False,
                 engine=self.name,
-                error="Failed to create TTS pipeline",
+                error=f"Failed to create TTS pipeline for {lang_code}",
             )
 
         try:
-            self._suppress_phonemizer_warnings()
             output_path = self._ensure_output_path(output_path, ".wav")
             
-            # Clean text: remove markdown formatting
-            import re
-            clean_text = text
-            clean_text = re.sub(r'#+\s*', '', clean_text)  # Remove headings
-            clean_text = re.sub(r'\*\*(.+?)\*\*', r'\1', clean_text)  # Remove bold
-            clean_text = re.sub(r'\*(.+?)\*', r'\1', clean_text)  # Remove italic
-            clean_text = re.sub(r'`(.+?)`', r'\1', clean_text)  # Remove code
-            clean_text = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', clean_text)  # Remove links
-            clean_text = re.sub(r'^\s*[-*]\s*', '', clean_text, flags=re.MULTILINE)  # Remove list markers
-            clean_text = re.sub(r'\n+', ' ', clean_text)  # Replace newlines with space
-            clean_text = re.sub(r'\s+', ' ', clean_text).strip()  # Normalize whitespace
+            # Clean text for TTS - convert Markdown to plain speech-friendly text
+            clean_text = self._clean_text_for_tts(text)
+            
+            if not clean_text:
+                return TTSResult(
+                    success=False,
+                    engine=self.name,
+                    error="No text to synthesize after cleaning",
+                )
             
             speed = 1.0 / rate if rate > 0 else 1.0
             
@@ -549,7 +668,6 @@ class KokoroTTS(BaseTTS):
                     success=False,
                     engine=self.name,
                     error="No audio generated",
-                    voice=voice,
                 )
             
             import numpy as np
@@ -569,7 +687,70 @@ class KokoroTTS(BaseTTS):
             )
         except Exception as e:
             logger.error(f"Kokoro TTS synthesis error: {e}")
-            return TTSResult(success=False, engine=self.name, error=str(e), voice=voice or "default")
+            return TTSResult(
+                success=False, 
+                engine=self.name, 
+                error=str(e), 
+                voice=voice or "default"
+            )
+    
+    def _clean_text_for_tts(self, text: str) -> str:
+        """Convert Markdown to speech-friendly plain text."""
+        import re
+        
+        result = text
+        
+        # Remove horizontal rules
+        result = re.sub(r'^[-]{3,}$', '', result, flags=re.MULTILINE)
+        result = re.sub(r'^[*]{3,}$', '', result, flags=re.MULTILINE)
+        
+        # Convert headers: "# 标题" → "标题"
+        result = re.sub(r'^#{1,6}\s+', '', result, flags=re.MULTILINE)
+        
+        # Convert links: "[文字](url)" → "文字"
+        result = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', result)
+        
+        # Remove bold/italic markers: "**文字**" → "文字"
+        result = re.sub(r'\*\*\*(.+?)\*\*\*', r'\1', result)
+        result = re.sub(r'\*\*(.+?)\*\*', r'\1', result)
+        result = re.sub(r'\*(.+?)\*', r'\1', result)
+        result = re.sub(r'__(.+?)__', r'\1', result)
+        result = re.sub(r'_(.+?)_', r'\1', result)
+        
+        # Remove inline code: "`代码`" → "代码"
+        result = re.sub(r'`([^`]+)`', r'\1', result)
+        
+        # Remove code blocks
+        result = re.sub(r'```[\s\S]*?```', '', result)
+        
+        # Convert list markers: "- 项目" → "项目"
+        result = re.sub(r'^[\s]*[-*+]\s+', '', result, flags=re.MULTILINE)
+        result = re.sub(r'^[\s]*\d+\.\s+', '', result, flags=re.MULTILINE)
+        
+        # Remove blockquote markers
+        result = re.sub(r'^>\s*', '', result, flags=re.MULTILINE)
+        
+        # Remove HTML tags
+        result = re.sub(r'<[^>]+>', '', result)
+        
+        # Remove URLs (standalone)
+        result = re.sub(r'https?://\S+', '', result)
+        
+        # Remove emoji (optional, some TTS can handle)
+        # result = re.sub(r'[\U00010000-\U0010ffff]', '', result)
+        
+        # Remove special markdown characters
+        result = result.replace('#', '')
+        result = result.replace('|', ' ')
+        result = result.replace('`', '')
+        
+        # Normalize whitespace
+        result = re.sub(r'\n\s*\n', '\n\n', result)
+        result = re.sub(r'\n{3,}', '\n\n', result)
+        result = re.sub(r'[ \t]+', ' ', result)
+        result = result.strip()
+        
+        return result
 
 
 class MeloTTS(BaseTTS):
@@ -787,6 +968,9 @@ class EdgeTTS(BaseTTS):
         try:
             import edge_tts
 
+            # Clean Markdown formatting for TTS
+            clean_text = self.clean_text_for_tts(text)
+
             if rate == 1.0:
                 rate_str = "+0%"
             elif rate > 1:
@@ -794,7 +978,7 @@ class EdgeTTS(BaseTTS):
             else:
                 rate_str = f"{int((rate - 1) * 100)}%"
 
-            communicate = edge_tts.Communicate(text, voice, rate=rate_str)
+            communicate = edge_tts.Communicate(clean_text, voice, rate=rate_str)
             await communicate.save(output_path)
 
             duration = self._get_duration_mp3(output_path)

@@ -263,18 +263,18 @@ def create_app():
                 storage = ArticleStorage()
                 gen = BriefingGenerator(ollama, indexer, storage)
 
-                # Generate news briefing
+                # Generate news briefing with source links
                 if article_paths:
                     chunks = gen.generate_from_articles(
                         article_paths=article_paths,
                         language=language,
-                        show_source=show_source,
+                        show_source=True,  # Always show source
                         title=title,
                     )
                     for chunk in chunks:
                         yield _sse_data({"content": chunk})
 
-                # Generate GitHub section
+                # Generate GitHub section with analysis and links
                 if github_repos:
                     yield _sse_data({"content": "\n\n---\n\n## 🐙 GitHub 热门项目\n\n"})
                     try:
@@ -282,17 +282,40 @@ def create_app():
                         for repo_name in github_repos[:5]:
                             try:
                                 analysis = analyze_github_repo(repo_name)
-                                yield _sse_data({"content": f"### {repo_name}\n\n"})
-                                if analysis.summary:
-                                    yield _sse_data({"content": analysis.summary + "\n\n"})
+                                repo_url = f"https://github.com/{repo_name}"
+                                
+                                yield _sse_data({"content": f"### [{repo_name}]({repo_url})\n\n"})
+                                
+                                if analysis.description:
+                                    yield _sse_data({"content": f"**简介**: {analysis.description}\n\n"})
+                                
+                                yield _sse_data({"content": f"**语言**: {analysis.language or 'Unknown'} | "})
+                                yield _sse_data({"content": f"⭐ {analysis.stars:,} | 🔀 {analysis.forks:,}\n\n"})
+                                
+                                if analysis.key_features:
+                                    yield _sse_data({"content": "**核心特性**:\n"})
+                                    for feature in analysis.key_features[:3]:
+                                        yield _sse_data({"content": f"- {feature}\n"})
+                                    yield _sse_data({"content": "\n"})
+                                
+                                if analysis.use_cases:
+                                    yield _sse_data({"content": "**应用场景**: "})
+                                    yield _sse_data({"content": ", ".join(analysis.use_cases[:3]) + "\n\n"})
+                                
+                                if analysis.tech_stack:
+                                    yield _sse_data({"content": f"**技术栈**: {', '.join(analysis.tech_stack[:5])}\n\n"})
+                                
+                                yield _sse_data({"content": f"📎 [项目地址]({repo_url})\n\n---\n\n"})
+                                
                             except Exception as e:
-                                yield _sse_data({"content": f"- {repo_name}\n\n"})
+                                logger.warning(f"Failed to analyze {repo_name}: {e}")
+                                yield _sse_data({"content": f"- [{repo_name}](https://github.com/{repo_name})\n\n"})
                     except Exception as e:
                         logger.warning(f"GitHub analysis failed: {e}")
 
                 # Generate market section
                 if stocks:
-                    yield _sse_data({"content": "\n\n---\n\n## 📊 市场行情\n\n"})
+                    yield _sse_data({"content": "\n\n## 📊 市场行情\n\n"})
                     yield _sse_data({"content": f"共跟踪 {len(stocks)} 只股票。\n\n"})
 
                 yield _sse_data({"done": True})
