@@ -552,7 +552,13 @@ def fetch_news(
                     title = info["title"]
                     date = info["date"]
 
-                    if storage.article_exists(
+                    # Skip if already fetched in this batch
+                    if url in seen_urls:
+                        continue
+                    seen_urls.add(url)
+
+                    # Check deduplication (unless force_refresh)
+                    if not force_refresh and storage.article_exists(
                         src.language, src.name, date, title
                     ):
                         continue
@@ -747,6 +753,76 @@ def generate_briefing_from_articles(
         return ToolResult(
             success=True,
             data={"content": content, "article_count": len(article_paths)},
+            metadata={"version": __version__},
+        )
+    except Exception as e:
+        from shouchao import __version__
+        return ToolResult(
+            success=False, error=str(e),
+            metadata={"version": __version__},
+        )
+
+
+def polish_briefing(
+    *,
+    content: str,
+    style: str = "tts",
+    language: str = "zh",
+    use_llm: bool = True,
+) -> ToolResult:
+    """Polish briefing content for better reading or TTS.
+
+    Args:
+        content: Raw briefing content to polish.
+        style: Polish style ("tts", "reading", "broadcast", "narrative").
+        language: Language code.
+        use_llm: Whether to use LLM for polishing (fallback to rules if False).
+
+    Returns:
+        ToolResult with polished content.
+    """
+    try:
+        from shouchao import __version__
+        from shouchao.core.config import CONFIG, load_config
+        from shouchao.core.polisher import BriefingPolisher
+
+        load_config()
+
+        if not content or not content.strip():
+            return ToolResult(
+                success=False,
+                error="Content is empty",
+                metadata={"version": __version__},
+            )
+
+        polisher = BriefingPolisher()
+
+        if use_llm and CONFIG.ollama_url:
+            try:
+                from shouchao.core.ollama_client import OllamaClient
+                ollama = OllamaClient(CONFIG.ollama_url)
+                polisher = BriefingPolisher(ollama_client=ollama)
+                polished = polisher.polish_with_llm(content, style, language)
+            except Exception as e:
+                logger.warning(f"LLM polishing failed, using rules: {e}")
+                if style == "tts":
+                    polished = polisher.polish_for_tts(content, language)
+                else:
+                    polished = polisher.polish_for_reading(content, style, language)
+        else:
+            if style == "tts":
+                polished = polisher.polish_for_tts(content, language)
+            else:
+                polished = polisher.polish_for_reading(content, style, language)
+
+        return ToolResult(
+            success=True,
+            data={
+                "original_length": len(content),
+                "polished_length": len(polished),
+                "content": polished,
+                "style": style,
+            },
             metadata={"version": __version__},
         )
     except Exception as e:

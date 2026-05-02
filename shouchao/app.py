@@ -1070,6 +1070,26 @@ def create_app():
         )
         return jsonify({"success": True, "result": result})
 
+    # ---- Briefing Polish API endpoint ----
+
+    @app.route("/api/briefing/polish", methods=["POST"])
+    def api_briefing_polish():
+        """Polish briefing content for reading or TTS."""
+        data = request.get_json(silent=True) or {}
+        content = data.get("content", "")
+        style = data.get("style", "tts")
+        language = data.get("language", "zh")
+        use_llm = data.get("use_llm", True)
+
+        from shouchao.api import polish_briefing
+        result = polish_briefing(
+            content=content,
+            style=style,
+            language=language,
+            use_llm=use_llm,
+        )
+        return jsonify(result.to_dict())
+
     return app
 
 

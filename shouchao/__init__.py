@@ -67,6 +67,10 @@ def __getattr__(name):
     if name == "get_preprint_categories":
         from shouchao.api import get_preprint_categories
         return get_preprint_categories
+    # Polish function
+    if name == "polish_briefing":
+        from shouchao.api import polish_briefing
+        return polish_briefing
     raise AttributeError(f"module 'shouchao' has no attribute {name!r}")
 
 
@@ -91,4 +95,6 @@ __all__ = [
     "search_preprints",
     "index_preprints",
     "get_preprint_categories",
+    # Polish function
+    "polish_briefing",
 ]
