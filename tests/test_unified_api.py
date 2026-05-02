@@ -213,7 +213,7 @@ class TestCoreSources:
 
     def test_all_languages_have_sources(self):
         from shouchao.core.sources import SOURCE_REGISTRY
-        expected_langs = {"zh", "en", "ja", "fr", "ru", "de", "it", "es", "pt", "ko"}
+        expected_langs = {"zh", "en", "ja", "fr", "ru", "de", "it", "es", "pt", "ko", "preprint"}
         assert set(SOURCE_REGISTRY.keys()) == expected_langs
 
     def test_each_language_has_sources(self):

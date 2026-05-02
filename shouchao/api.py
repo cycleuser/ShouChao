@@ -454,6 +454,7 @@ def fetch_news(
     source: Optional[str] = None,
     max_articles: int = 50,
     fetcher: str = "requests",
+    force_refresh: bool = False,
 ) -> ToolResult:
     """Fetch news articles from configured sources.
 
@@ -462,6 +463,7 @@ def fetch_news(
         source: Specific source name to fetch from. None = all enabled.
         max_articles: Maximum articles to fetch per source.
         fetcher: Fetcher backend ("requests", "curl", "browser", "playwright").
+        force_refresh: Ignore dedup and fetch all (for fresh content).
 
     Returns:
         ToolResult with data={"fetched": N, "articles": [...]}.
@@ -489,6 +491,11 @@ def fetch_news(
         if source:
             sources = [s for s in sources if s.name.lower() == source.lower()]
 
+        # Also include preprint sources if no language specified
+        if language is None:
+            preprint_sources = get_sources(language="preprint")
+            sources = sources + preprint_sources
+
         if not sources:
             return ToolResult(
                 success=True,
@@ -498,6 +505,7 @@ def fetch_news(
 
         http_fetcher = create_fetcher(fetcher, proxy=proxy_str)
         all_articles = []
+        seen_urls = set()
 
         logger.info(f"Starting fetch: language={language}, source={source}, max={max_articles}, fetcher={fetcher}")
         
@@ -857,6 +865,352 @@ def list_sources(
             success=False, error=str(e),
             metadata={"version": __version__},
         )
+
+
+def fetch_preprints(
+    *,
+    servers: Optional[list[str]] = None,
+    categories: Optional[list[str]] = None,
+    keywords: Optional[list[str]] = None,
+    max_results: int = 100,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+) -> ToolResult:
+    """Fetch preprints from arXiv, bioRxiv, and medRxiv.
+
+    Args:
+        servers: List of servers ("arxiv", "biorxiv", "medrxiv"). Default: all.
+        categories: List of categories (e.g., "cs.AI", "cs.LG", "genomics").
+        keywords: Keywords to filter articles.
+        max_results: Max results per server.
+        date_from: Start date (YYYY-MM-DD). Default: today.
+        date_to: End date (YYYY-MM-DD). Default: today.
+
+    Returns:
+        ToolResult with fetched and saved preprint info.
+    """
+    try:
+        from shouchao import __version__
+        from shouchao.core.config import CONFIG, get_proxies, ensure_dirs
+        from shouchao.core.preprint import (
+            fetch_preprints as _fetch,
+            save_preprints as _save,
+        )
+
+        ensure_dirs()
+        proxy = get_proxies()
+
+        entries = _fetch(
+            servers=servers,
+            categories=categories,
+            keywords=keywords,
+            max_results=max_results,
+            date_from=date_from,
+            date_to=date_to,
+            proxy=proxy,
+        )
+
+        saved = _save(entries)
+
+        return ToolResult(
+            success=True,
+            data={
+                "fetched": len(entries),
+                "saved": len(saved),
+                "preprints": saved,
+                "by_source": _count_by_source(entries),
+            },
+            metadata={"version": __version__},
+        )
+    except Exception as e:
+        from shouchao import __version__
+        return ToolResult(
+            success=False, error=str(e),
+            metadata={"version": __version__},
+        )
+
+
+def search_preprints(
+    *,
+    query: str,
+    mode: str = "keyword",
+    top_k: int = 10,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+) -> ToolResult:
+    """Search preprints with multiple matching modes.
+
+    Args:
+        query: Search query.
+        mode: "keyword" (text match), "semantic" (vector search),
+              or "model" (LLM ranking).
+        top_k: Number of results.
+        date_from: Filter by date from.
+        date_to: Filter by date to.
+
+    Returns:
+        ToolResult with search results.
+    """
+    try:
+        from shouchao import __version__
+        from shouchao.core.config import CONFIG, load_config, NEWS_DIR
+        from shouchao.core.preprint import (
+            search_preprints_keyword,
+            search_preprints_semantic,
+            rank_preprints_with_model,
+            PreprintEntry,
+        )
+        from shouchao.core.storage import ArticleStorage
+        from shouchao.core.ollama_client import OllamaClient
+        from shouchao.core.indexer import NewsIndexer
+
+        load_config()
+
+        # Load preprints from storage
+        storage = ArticleStorage()
+        articles = storage.list_articles(
+            website=None,
+            date_from=date_from,
+            date_to=date_to,
+        )
+
+        # Filter to preprint sources
+        preprint_sources = {"arxiv", "biorxiv", "medrxiv"}
+        preprint_articles = [
+            a for a in articles
+            if a.get("website", "").lower() in preprint_sources
+        ]
+
+        if mode == "keyword":
+            # Build entries from stored articles
+            entries = []
+            for art in preprint_articles:
+                try:
+                    content = storage.get_article(art["path"])
+                    entry = _parse_article_to_entry(content, art)
+                    entries.append(entry)
+                except Exception:
+                    continue
+
+            results = search_preprints_keyword(
+                query=query, entries=entries, top_k=top_k,
+            )
+            formatted = [
+                {
+                    "score": score,
+                    "title": e.title,
+                    "url": e.url,
+                    "source": e.source,
+                    "date": e.date_str,
+                    "authors": e.authors[:3],
+                    "categories": e.categories,
+                    "abstract": e.abstract[:300],
+                }
+                for score, e in results
+            ]
+
+        elif mode == "semantic":
+            ollama = OllamaClient(CONFIG.ollama_url)
+            indexer = NewsIndexer(ollama)
+            results = indexer.search_news(
+                query, collection="preprints", top_k=top_k,
+            )
+            formatted = results
+
+        elif mode == "model":
+            # First get keyword matches, then rank with model
+            entries = []
+            for art in preprint_articles:
+                try:
+                    content = storage.get_article(art["path"])
+                    entry = _parse_article_to_entry(content, art)
+                    entries.append(entry)
+                except Exception:
+                    continue
+
+            ollama = OllamaClient(CONFIG.ollama_url)
+            results = rank_preprints_with_model(
+                query=query, entries=entries,
+                ollama_client=ollama, top_k=top_k,
+            )
+            formatted = [
+                {
+                    "score": score,
+                    "title": e.title,
+                    "url": e.url,
+                    "source": e.source,
+                    "date": e.date_str,
+                    "authors": e.authors[:3],
+                    "categories": e.categories,
+                    "abstract": e.abstract[:300],
+                }
+                for score, e in results
+            ]
+        else:
+            return ToolResult(
+                success=False,
+                error=f"Unknown search mode: {mode}. Use 'keyword', 'semantic', or 'model'.",
+                metadata={"version": __version__},
+            )
+
+        return ToolResult(
+            success=True,
+            data={
+                "query": query,
+                "mode": mode,
+                "results": formatted,
+                "count": len(formatted),
+            },
+            metadata={"version": __version__},
+        )
+    except Exception as e:
+        from shouchao import __version__
+        return ToolResult(
+            success=False, error=str(e),
+            metadata={"version": __version__},
+        )
+
+
+def index_preprints(
+    *,
+    directory: Optional[str] = None,
+    collection: str = "preprints",
+) -> ToolResult:
+    """Index preprint articles into knowledge base.
+
+    Args:
+        directory: Directory to index. Default: preprints subdirectory.
+        collection: ChromaDB collection name.
+    """
+    try:
+        from shouchao import __version__
+        from shouchao.core.config import CONFIG, NEWS_DIR, load_config
+        from shouchao.core.ollama_client import OllamaClient
+        from shouchao.core.indexer import NewsIndexer
+
+        load_config()
+        ollama = OllamaClient(CONFIG.ollama_url)
+        indexer = NewsIndexer(ollama)
+
+        if directory is None:
+            directory = str(NEWS_DIR / "en")
+
+        count = indexer.index_directory(directory, collection)
+
+        return ToolResult(
+            success=True,
+            data={"indexed": count, "directory": directory, "collection": collection},
+            metadata={"version": __version__},
+        )
+    except Exception as e:
+        from shouchao import __version__
+        return ToolResult(
+            success=False, error=str(e),
+            metadata={"version": __version__},
+        )
+
+
+def get_preprint_categories(
+    *,
+    server: Optional[str] = None,
+) -> ToolResult:
+    """Get available preprint categories.
+
+    Args:
+        server: Filter by server ("arxiv", "biorxiv", "medrxiv"). None = all.
+
+    Returns:
+        ToolResult with category lists.
+    """
+    try:
+        from shouchao import __version__
+        from shouchao.core.preprint import (
+            ARXIV_CATEGORIES, BIORXIV_CATEGORIES, MEDRXIV_CATEGORIES,
+        )
+
+        result = {}
+        if server is None or server == "arxiv":
+            result["arxiv"] = ARXIV_CATEGORIES
+        if server is None or server == "biorxiv":
+            result["biorxiv"] = BIORXIV_CATEGORIES
+        if server is None or server == "medrxiv":
+            result["medrxiv"] = MEDRXIV_CATEGORIES
+
+        return ToolResult(
+            success=True,
+            data={"categories": result},
+            metadata={"version": __version__},
+        )
+    except Exception as e:
+        from shouchao import __version__
+        return ToolResult(
+            success=False, error=str(e),
+            metadata={"version": __version__},
+        )
+
+
+# ---------------------------------------------------------------------------
+# Internal helpers
+# ---------------------------------------------------------------------------
+
+def _count_by_source(entries: list) -> dict:
+    """Count entries by source."""
+    from shouchao.core.preprint import PreprintEntry
+    counts = {}
+    for e in entries:
+        if isinstance(e, PreprintEntry):
+            counts[e.source] = counts.get(e.source, 0) + 1
+    return counts
+
+
+def _parse_article_to_entry(content: str, article_info: dict):
+    """Parse a stored article markdown to PreprintEntry."""
+    from shouchao.core.preprint import PreprintEntry
+
+    title = article_info.get("title", "")
+    url = ""
+    abstract = ""
+    authors = []
+    categories = []
+    source = article_info.get("website", "")
+
+    # Parse front matter
+    if content.startswith("---"):
+        end = content.find("---", 3)
+        if end > 0:
+            fm_block = content[3:end].strip()
+            for line in fm_block.split("\n"):
+                if ":" in line:
+                    key, _, val = line.partition(":")
+                    key = key.strip()
+                    val = val.strip().strip('"')
+                    if key == "url":
+                        url = val
+                    elif key == "authors":
+                        authors = [a.strip() for a in val.split(",") if a.strip()]
+                    elif key == "categories":
+                        categories = [c.strip() for c in val.split(",") if c.strip()]
+                    elif key == "source":
+                        source = val
+
+    # Extract abstract (after "## Abstract" heading)
+    abstract_marker = content.find("## Abstract")
+    if abstract_marker > 0:
+        abstract = content[abstract_marker + 11:].strip()
+        # Remove links at the end
+        for marker in ("[PDF]", "[Source]"):
+            idx = abstract.find(marker)
+            if idx > 0:
+                abstract = abstract[:idx].strip()
+
+    return PreprintEntry(
+        title=title,
+        url=url,
+        abstract=abstract,
+        authors=authors,
+        categories=categories,
+        source=source,
+    )
 
 
 # ---------------------------------------------------------------------------

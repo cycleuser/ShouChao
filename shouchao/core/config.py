@@ -33,6 +33,7 @@ NEWS_DIR: Path = DATA_DIR / "news"
 CHROMA_DIR: Path = DATA_DIR / "chroma"
 BRIEFINGS_DIR: Path = DATA_DIR / "briefings"
 LOGS_DIR: Path = DATA_DIR / "logs"
+PREPRINT_DIR: Path = NEWS_DIR / "en" / "preprints"
 CONFIG_FILE: Path = DATA_DIR / "shouchao_config.json"
 CUSTOM_SOURCES_FILE: Path = DATA_DIR / "custom_sources.json"
 
@@ -59,6 +60,13 @@ class Config:
     max_context_tokens: int = 3000
     web_port: int = 5001
     web_host: str = "0.0.0.0"
+    # Preprint settings
+    preprint_servers: list = field(default_factory=lambda: ["arxiv", "biorxiv", "medrxiv"])
+    preprint_categories: list = field(default_factory=lambda: ["cs.AI", "cs.LG", "cs.CL"])
+    preprint_max_results: int = 200
+    preprint_auto_index: bool = True
+    preprint_schedule_time: str = "06:00"
+    preprint_schedule_enabled: bool = False
 
 
 def _detect_language() -> str:
@@ -233,5 +241,5 @@ def test_proxy_connection(test_url: str = "https://www.google.com") -> dict:
 
 def ensure_dirs() -> None:
     """Create all data directories if they don't exist."""
-    for d in (DATA_DIR, NEWS_DIR, CHROMA_DIR, BRIEFINGS_DIR, LOGS_DIR):
+    for d in (DATA_DIR, NEWS_DIR, CHROMA_DIR, BRIEFINGS_DIR, LOGS_DIR, PREPRINT_DIR):
         d.mkdir(parents=True, exist_ok=True)

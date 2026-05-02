@@ -15,7 +15,7 @@ from shouchao import __version__
 logger = logging.getLogger(__name__)
 
 CLI_COMMANDS = {"fetch", "search", "briefing", "analyze", "index",
-                "sources", "config", "web", "gui"}
+                "sources", "config", "web", "gui", "preprint", "schedule"}
 
 
 def main():
@@ -34,6 +34,8 @@ def main():
             "config": cmd_config,
             "web": cmd_web,
             "gui": cmd_gui,
+            "preprint": cmd_preprint,
+            "schedule": cmd_schedule,
         }
         return handlers[cmd]()
 
@@ -63,6 +65,8 @@ Subcommands:
   config      View/update configuration
   web         Start web server
   gui         Launch GUI
+  preprint    Fetch/search preprints (arXiv, bioRxiv, medRxiv)
+  schedule    Manage automatic preprint fetching schedule
 
 Examples:
   shouchao fetch --language en --max 10
@@ -70,6 +74,10 @@ Examples:
   shouchao briefing --type daily
   shouchao analyze "EU policy impact" --scenario investment
   shouchao sources --language zh
+  shouchao preprint fetch --servers arxiv --categories cs.AI,cs.LG
+  shouchao preprint search "large language models" --mode keyword
+  shouchao schedule enable --time 06:00 --servers arxiv,biorxiv
+  shouchao schedule status
   shouchao web --port 5001
 """,
     )
@@ -591,3 +599,361 @@ def cmd_gui():
 
     from shouchao.gui import launch_gui
     launch_gui()
+
+
+# ---------------------------------------------------------------------------
+# preprint
+# ---------------------------------------------------------------------------
+
+def cmd_preprint():
+    """Handle preprint subcommands: fetch, search, categories, index."""
+    if len(sys.argv) < 2 or sys.argv[1] not in ("fetch", "search", "categories", "index"):
+        print("Usage: shouchao preprint <subcommand>")
+        print("Subcommands: fetch, search, categories, index")
+        print()
+        print("Examples:")
+        print("  shouchao preprint fetch --servers arxiv --categories cs.AI,cs.LG")
+        print("  shouchao preprint search 'transformer models' --mode keyword")
+        print("  shouchao preprint categories --server arxiv")
+        print("  shouchao preprint index")
+        return
+
+    subcmd = sys.argv.pop(1)  # Remove "preprint" from argv
+    sys.argv.pop(0)  # Remove subcommand from argv
+
+    if subcmd == "fetch":
+        cmd_preprint_fetch()
+    elif subcmd == "search":
+        cmd_preprint_search()
+    elif subcmd == "categories":
+        cmd_preprint_categories()
+    elif subcmd == "index":
+        cmd_preprint_index()
+
+
+def cmd_preprint_fetch():
+    parser = argparse.ArgumentParser(prog="shouchao preprint fetch",
+                                     description="Fetch preprints from arXiv, bioRxiv, medRxiv")
+    _parse_common_flags(parser)
+    parser.add_argument("--servers", "-s",
+                        help="Comma-separated servers (arxiv,biorxiv,medrxiv)")
+    parser.add_argument("--categories", "-c",
+                        help="Comma-separated categories (e.g., cs.AI,cs.LG)")
+    parser.add_argument("--keywords", "-k",
+                        help="Comma-separated keywords to filter")
+    parser.add_argument("--max", type=int, default=100, dest="max_results",
+                        help="Max results per server")
+    parser.add_argument("--date-from", help="Start date (YYYY-MM-DD)")
+    parser.add_argument("--date-to", help="End date (YYYY-MM-DD)")
+    parser.add_argument("--index", action="store_true",
+                        help="Index fetched preprints after fetching")
+    args = parser.parse_args()
+    _apply_data_dir(args)
+    _setup_logging(args.verbose, args.quiet)
+
+    from shouchao.api import fetch_preprints
+
+    servers = args.servers.split(",") if args.servers else None
+    categories = args.categories.split(",") if args.categories else None
+    keywords = args.keywords.split(",") if args.keywords else None
+
+    if not args.quiet:
+        print(f"\nFetching preprints...")
+        print(f"  Servers: {servers or 'all'}")
+        print(f"  Categories: {categories or 'default'}")
+        print(f"  Keywords: {keywords or 'none'}")
+        print(f"  Max results: {args.max_results}")
+
+    result = fetch_preprints(
+        servers=servers,
+        categories=categories,
+        keywords=keywords,
+        max_results=args.max_results,
+        date_from=args.date_from,
+        date_to=args.date_to,
+    )
+
+    def _print_text():
+        if result.success:
+            data = result.data
+            print(f"\nFetched {data['fetched']} preprints, saved {data['saved']}")
+            by_source = data.get('by_source', {})
+            for server, count in by_source.items():
+                print(f"  {server}: {count}")
+
+            if not args.quiet and data.get('preprints'):
+                from rich.console import Console
+                from rich.table import Table
+                console = Console()
+                table = Table(title="Fetched Preprints")
+                table.add_column("Source", style="cyan")
+                table.add_column("Date")
+                table.add_column("Title", style="white")
+                table.add_column("Categories", style="dim")
+                for p in data['preprints'][:30]:
+                    table.add_row(
+                        p.get("source", ""),
+                        p.get("date", ""),
+                        p.get("title", "")[:60],
+                        ", ".join(p.get("categories", []))[:30],
+                    )
+                console.print(table)
+        else:
+            print(f"Error: {result.error}")
+
+    _output(args, result.to_dict(), _print_text)
+
+    # Index if requested
+    if args.index and result.success:
+        from shouchao.api import index_preprints
+        index_result = index_preprints()
+        if index_result.success:
+            print(f"\nIndexed {index_result.data['indexed']} preprints")
+
+
+def cmd_preprint_search():
+    parser = argparse.ArgumentParser(prog="shouchao preprint search",
+                                     description="Search preprints")
+    _parse_common_flags(parser)
+    parser.add_argument("query", help="Search query")
+    parser.add_argument("--mode", "-m", default="keyword",
+                        choices=["keyword", "semantic", "model"],
+                        help="Search mode: keyword, semantic, or model")
+    parser.add_argument("--top-k", type=int, default=10)
+    parser.add_argument("--date-from", help="Start date (YYYY-MM-DD)")
+    parser.add_argument("--date-to", help="End date (YYYY-MM-DD)")
+    args = parser.parse_args()
+    _apply_data_dir(args)
+    _setup_logging(args.verbose, args.quiet)
+
+    from shouchao.api import search_preprints
+
+    result = search_preprints(
+        query=args.query,
+        mode=args.mode,
+        top_k=args.top_k,
+        date_from=args.date_from,
+        date_to=args.date_to,
+    )
+
+    def _print_text():
+        if result.success:
+            data = result.data
+            print(f"\nFound {data['count']} results for: {data['query']}")
+            print(f"  Mode: {data['mode']}\n")
+
+            for i, r in enumerate(data['results'], 1):
+                print(f"{i}. [{r.get('source', '?')}] {r.get('title', 'Untitled')}")
+                print(f"   Date: {r.get('date', '?')} | Score: {r.get('score', 0)}")
+                if r.get('authors'):
+                    print(f"   Authors: {', '.join(r['authors'][:3])}")
+                if r.get('categories'):
+                    print(f"   Categories: {', '.join(r['categories'])}")
+                abstract = r.get('abstract', '')
+                if abstract:
+                    print(f"   {abstract[:150]}...")
+                print()
+        else:
+            print(f"Error: {result.error}")
+
+    _output(args, result.to_dict(), _print_text)
+
+
+def cmd_preprint_categories():
+    parser = argparse.ArgumentParser(prog="shouchao preprint categories",
+                                     description="List preprint categories")
+    _parse_common_flags(parser)
+    parser.add_argument("--server", "-s",
+                        choices=["arxiv", "biorxiv", "medrxiv"],
+                        help="Filter by server")
+    args = parser.parse_args()
+    _apply_data_dir(args)
+
+    from shouchao.api import get_preprint_categories
+
+    result = get_preprint_categories(server=args.server)
+
+    def _print_text():
+        if result.success:
+            categories = result.data.get('categories', {})
+            for server, cats in categories.items():
+                print(f"\n{server}:")
+                if isinstance(cats, dict):
+                    for group, items in cats.items():
+                        print(f"  {group}: {', '.join(items)}")
+                else:
+                    print(f"  {', '.join(cats)}")
+        else:
+            print(f"Error: {result.error}")
+
+    _output(args, result.to_dict(), _print_text)
+
+
+def cmd_preprint_index():
+    parser = argparse.ArgumentParser(prog="shouchao preprint index",
+                                     description="Index preprints to knowledge base")
+    _parse_common_flags(parser)
+    parser.add_argument("--directory", "-d", help="Directory to index")
+    parser.add_argument("--collection", default="preprints")
+    args = parser.parse_args()
+    _apply_data_dir(args)
+    _setup_logging(args.verbose, args.quiet)
+
+    from shouchao.api import index_preprints
+
+    result = index_preprints(
+        directory=args.directory,
+        collection=args.collection,
+    )
+
+    def _print_text():
+        if result.success:
+            print(f"Indexed {result.data.get('indexed', 0)} preprints "
+                  f"into collection '{result.data.get('collection')}'")
+        else:
+            print(f"Error: {result.error}")
+
+    _output(args, result.to_dict(), _print_text)
+
+
+# ---------------------------------------------------------------------------
+# schedule
+# ---------------------------------------------------------------------------
+
+def cmd_schedule():
+    """Handle schedule subcommands: enable, disable, status, run."""
+    if len(sys.argv) < 2 or sys.argv[1] not in ("enable", "disable", "status", "run"):
+        print("Usage: shouchao schedule <subcommand>")
+        print("Subcommands: enable, disable, status, run")
+        print()
+        print("Examples:")
+        print("  shouchao schedule enable --time 06:00 --servers arxiv")
+        print("  shouchao schedule status")
+        print("  shouchao schedule run")
+        return
+
+    subcmd = sys.argv.pop(1)
+    sys.argv.pop(0)
+
+    if subcmd == "enable":
+        cmd_schedule_enable()
+    elif subcmd == "disable":
+        cmd_schedule_disable()
+    elif subcmd == "status":
+        cmd_schedule_status()
+    elif subcmd == "run":
+        cmd_schedule_run()
+
+
+def cmd_schedule_enable():
+    parser = argparse.ArgumentParser(prog="shouchao schedule enable",
+                                     description="Enable automatic preprint fetching")
+    _parse_common_flags(parser)
+    parser.add_argument("--time", "-t", default="06:00",
+                        help="Time to run (HH:MM, 24h format)")
+    parser.add_argument("--servers", "-s",
+                        help="Comma-separated servers")
+    parser.add_argument("--categories", "-c",
+                        help="Comma-separated categories")
+    parser.add_argument("--keywords", "-k",
+                        help="Comma-separated keywords")
+    parser.add_argument("--max", type=int, default=200, dest="max_results")
+    parser.add_argument("--no-index", action="store_true",
+                        help="Disable auto-indexing")
+    args = parser.parse_args()
+    _apply_data_dir(args)
+
+    from shouchao.core.scheduler import enable_scheduler
+
+    servers = args.servers.split(",") if args.servers else None
+    categories = args.categories.split(",") if args.categories else None
+    keywords = args.keywords.split(",") if args.keywords else None
+
+    enable_scheduler(
+        time=args.time,
+        servers=servers,
+        categories=categories,
+        keywords=keywords,
+        max_results=args.max_results,
+        auto_index=not args.no_index,
+    )
+
+    print(f"Scheduler enabled: daily at {args.time}")
+
+
+def cmd_schedule_disable():
+    from shouchao.core.scheduler import disable_scheduler
+
+    disable_scheduler()
+    print("Scheduler disabled")
+
+
+def cmd_schedule_status():
+    parser = argparse.ArgumentParser(prog="shouchao schedule status",
+                                     description="Show scheduler status")
+    _parse_common_flags(parser)
+    args = parser.parse_args()
+    _apply_data_dir(args)
+
+    from shouchao.core.scheduler import get_scheduler_status
+
+    status = get_scheduler_status()
+
+    def _print_text():
+        print("\nPreprint Scheduler Status:")
+        print(f"  Enabled: {status['enabled']}")
+        print(f"  Running: {status['running']}")
+        print(f"  Time: {status['time']}")
+        print(f"  Servers: {', '.join(status['servers'])}")
+        print(f"  Categories: {', '.join(status['categories'])}")
+        if status.get('last_run'):
+            print(f"  Last run: {status['last_run']}")
+        if status.get('last_status'):
+            ls = status['last_status']
+            print(f"  Last status: {'Success' if ls.get('success') else 'Failed'}")
+            if ls.get('fetched') is not None:
+                print(f"    Fetched: {ls['fetched']}, Saved: {ls['saved']}")
+            if ls.get('error'):
+                print(f"    Error: {ls['error']}")
+
+    _output(args, status, _print_text)
+
+
+def cmd_schedule_run():
+    parser = argparse.ArgumentParser(prog="shouchao schedule run",
+                                     description="Run manual preprint fetch")
+    _parse_common_flags(parser)
+    parser.add_argument("--servers", "-s",
+                        help="Comma-separated servers")
+    parser.add_argument("--categories", "-c",
+                        help="Comma-separated categories")
+    parser.add_argument("--keywords", "-k",
+                        help="Comma-separated keywords")
+    parser.add_argument("--max", type=int, default=200, dest="max_results")
+    parser.add_argument("--no-index", action="store_true",
+                        help="Disable auto-indexing")
+    args = parser.parse_args()
+    _apply_data_dir(args)
+    _setup_logging(args.verbose, args.quiet)
+
+    from shouchao.core.scheduler import run_manual_fetch
+
+    servers = args.servers.split(",") if args.servers else None
+    categories = args.categories.split(",") if args.categories else None
+    keywords = args.keywords.split(",") if args.keywords else None
+
+    print("Running manual fetch...")
+    result = run_manual_fetch(
+        servers=servers,
+        categories=categories,
+        keywords=keywords,
+        max_results=args.max_results,
+        auto_index=not args.no_index,
+    )
+
+    print(f"\nFetched {result['fetched']} preprints, saved {result['saved']}")
+    if result.get('indexed'):
+        print(f"Indexed {result['indexed']} preprints")
+    by_source = result.get('by_source', {})
+    for server, count in by_source.items():
+        print(f"  {server}: {count}")

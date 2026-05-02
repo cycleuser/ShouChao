@@ -227,4 +227,4 @@ class TestPackageExportsNew:
 
     def test_version_updated(self):
         import shouchao
-        assert shouchao.__version__.startswith("0.2")
+        assert shouchao.__version__.startswith("0.3")

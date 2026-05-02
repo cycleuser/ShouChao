@@ -269,6 +269,7 @@
         .source-icon.news { background: linear-gradient(135deg, #3b82f6, #60a5fa); }
         .source-icon.github { background: linear-gradient(135deg, #1f2937, #4b5563); }
         .source-icon.market { background: linear-gradient(135deg, #10b981, #34d399); }
+        .source-icon.preprint { background: linear-gradient(135deg, #8b5cf6, #a78bfa); }
 
         .source-title { font-size: 16px; font-weight: 700; }
         .source-desc { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
@@ -706,6 +707,53 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- 预印本论文 -->
+                    <div class="source-card" data-source="preprint" onclick="toggleSource(this)">
+                        <div class="source-check"></div>
+                        <div class="source-card-header">
+                            <div class="source-icon preprint">📄</div>
+                            <div>
+                                <div class="source-title">预印本论文</div>
+                                <div class="source-desc">arXiv, bioRxiv, medRxiv 最新论文</div>
+                            </div>
+                        </div>
+                        <div class="source-content">
+                            <div class="form-group">
+                                <label class="form-label">预印本平台</label>
+                                <div class="lang-grid" id="preprintServerGrid">
+                                    <div class="lang-item selected" data-server="arxiv" onclick="togglePreprintServer(this, event)">
+                                        <span>arXiv</span>
+                                    </div>
+                                    <div class="lang-item" data-server="biorxiv" onclick="togglePreprintServer(this, event)">
+                                        <span>bioRxiv</span>
+                                    </div>
+                                    <div class="lang-item" data-server="medrxiv" onclick="togglePreprintServer(this, event)">
+                                        <span>medRxiv</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">学科类别</label>
+                                <select id="preprintCategory" class="form-select">
+                                    <option value="cs.AI,cs.LG,cs.CL">AI / ML / NLP</option>
+                                    <option value="cs.CV">计算机视觉</option>
+                                    <option value="q-bio.GN,q-bio.BM">基因组学 / 生物分子</option>
+                                    <option value="math.ST,math.OC">统计 / 优化</option>
+                                    <option value="stat.ML">统计机器学习</option>
+                                    <option value="physics.data-an">数据分析</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">关键词过滤（可选）</label>
+                                <input type="text" id="preprintKeywords" class="form-input" placeholder="用逗号分隔，如: transformer, llm">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">最大结果数</label>
+                                <input type="number" id="preprintMaxResults" class="form-input" value="50" min="10" max="200" style="width: 100px;">
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="card">
@@ -722,6 +770,10 @@
                         <div class="stat-item">
                             <div class="stat-value" id="statMarket">0</div>
                             <div class="stat-label">股票</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="statPreprint">0</div>
+                            <div class="stat-label">预印本</div>
                         </div>
                     </div>
                     <p id="noSourceHint" style="color: var(--text-secondary); font-size: 13px;">请选择至少一个素材来源</p>
@@ -771,6 +823,19 @@
                         <span id="marketCount" class="badge badge-success" style="margin-left: auto;">0 只</span>
                     </h3>
                     <div id="marketList" style="max-height: 400px; overflow-y: auto;"></div>
+                </div>
+
+                <!-- 预印本内容 -->
+                <div class="card" id="preprintSelectCard" style="display: none;">
+                    <h3 class="card-title">
+                        📄 预印本论文
+                        <span id="preprintCount" class="badge badge-success" style="margin-left: auto;">0 篇</span>
+                    </h3>
+                    <div class="btn-group" style="margin-top: 0; margin-bottom: 12px;">
+                        <button class="btn btn-secondary btn-sm" onclick="selectAllPreprints()">全选</button>
+                        <button class="btn btn-secondary btn-sm" onclick="deselectAllPreprints()">清除</button>
+                    </div>
+                    <div class="article-list" id="preprintList"></div>
                 </div>
 
                 <div class="btn-group">
@@ -948,12 +1013,15 @@
         let currentStep = 1;
         let selectedSources = ['news'];
         let selectedNewsLangs = ['zh', 'en'];
+        let selectedPreprintServers = ['arxiv'];
         let newsArticles = [];
         let githubRepos = [];
         let marketStocks = [];
+        let preprintArticles = [];
         let selectedArticles = [];
         let selectedRepos = [];
         let selectedStocks = [];
+        let selectedPreprints = [];
         let currentBriefing = '';
         let currentAudioPath = '';
         let modelConnected = false;
@@ -1008,6 +1076,18 @@
             }
         }
 
+        function togglePreprintServer(el, event) {
+            event.stopPropagation();
+            const server = el.dataset.server;
+            if (selectedPreprintServers.includes(server)) {
+                selectedPreprintServers = selectedPreprintServers.filter(s => s !== server);
+                el.classList.remove('selected');
+            } else {
+                selectedPreprintServers.push(server);
+                el.classList.add('selected');
+            }
+        }
+
         function updateSourceStats() {
             const stats = document.getElementById('selectedStats');
             const hint = document.getElementById('noSourceHint');
@@ -1017,6 +1097,7 @@
                 document.getElementById('statNews').textContent = selectedSources.includes('news') ? '✓' : '-';
                 document.getElementById('statGithub').textContent = selectedSources.includes('github') ? '✓' : '-';
                 document.getElementById('statMarket').textContent = selectedSources.includes('market') ? '✓' : '-';
+                document.getElementById('statPreprint').textContent = selectedSources.includes('preprint') ? '✓' : '-';
             } else {
                 stats.style.display = 'none';
                 hint.style.display = 'block';
@@ -1040,6 +1121,11 @@
             // 抓取股市
             if (selectedSources.includes('market')) {
                 await fetchMarket();
+            }
+            
+            // 抓取预印本
+            if (selectedSources.includes('preprint')) {
+                await fetchPreprints();
             }
             
             goToStep(2);
@@ -1085,6 +1171,38 @@
                 showToast(`获取 ${marketStocks.length} 只股票数据`, 'success');
             } catch (e) {
                 showToast('股市数据获取失败: ' + e.message, 'error');
+            }
+        }
+
+        async function fetchPreprints() {
+            try {
+                const servers = selectedPreprintServers;
+                const categories = document.getElementById('preprintCategory').value.split(',');
+                const keywordsStr = document.getElementById('preprintKeywords').value.trim();
+                const keywords = keywordsStr ? keywordsStr.split(',').map(k => k.trim()) : null;
+                const maxResults = parseInt(document.getElementById('preprintMaxResults').value) || 50;
+
+                const res = await fetch('/api/preprint/fetch', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        servers: servers,
+                        categories: categories,
+                        keywords: keywords,
+                        max_results: maxResults,
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    preprintArticles = data.data?.preprints || [];
+                    selectedPreprints = preprintArticles.slice(0, 10).map(p => p.path);
+                    renderPreprintList();
+                    showToast(`获取 ${preprintArticles.length} 篇预印本论文`, 'success');
+                } else {
+                    showToast('预印本获取失败: ' + (data.error || '未知错误'), 'error');
+                }
+            } catch (e) {
+                showToast('预印本获取失败: ' + e.message, 'error');
             }
         }
 
@@ -1142,6 +1260,25 @@
             `).join('')}</div>`;
         }
 
+        function renderPreprintList() {
+            const card = document.getElementById('preprintSelectCard');
+            const list = document.getElementById('preprintList');
+            if (card) card.style.display = 'block';
+            const countEl = document.getElementById('preprintCount');
+            if (countEl) countEl.textContent = selectedPreprints.length + ' 篇';
+            
+            if (!list) return;
+            list.innerHTML = preprintArticles.map(p => `
+                <div class="article-item ${selectedPreprints.includes(p.path) ? 'selected' : ''}" onclick="togglePreprint('${p.path}')">
+                    <input type="checkbox" class="article-checkbox" ${selectedPreprints.includes(p.path) ? 'checked' : ''} onclick="event.stopPropagation()">
+                    <div class="article-info">
+                        <div class="article-title">${p.title || '无标题'}</div>
+                        <div class="article-meta">${p.source || ''} · ${p.date || ''}${p.categories ? ' · ' + p.categories.slice(0, 2).join(', ') : ''}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
         function toggleArticle(path) {
             if (selectedArticles.includes(path)) {
                 selectedArticles = selectedArticles.filter(p => p !== path);
@@ -1169,6 +1306,25 @@
             renderMarketList();
         }
 
+        function togglePreprint(path) {
+            if (selectedPreprints.includes(path)) {
+                selectedPreprints = selectedPreprints.filter(p => p !== path);
+            } else {
+                selectedPreprints.push(path);
+            }
+            renderPreprintList();
+        }
+
+        function selectAllPreprints() {
+            selectedPreprints = preprintArticles.map(p => p.path);
+            renderPreprintList();
+        }
+
+        function deselectAllPreprints() {
+            selectedPreprints = [];
+            renderPreprintList();
+        }
+
         function selectAllNews() {
             selectedArticles = newsArticles.map(a => a.path);
             renderNewsList();
@@ -1181,7 +1337,7 @@
 
         // 生成简报
         function generateBriefing() {
-            if (selectedArticles.length === 0 && selectedRepos.length === 0 && selectedStocks.length === 0) {
+            if (selectedArticles.length === 0 && selectedRepos.length === 0 && selectedStocks.length === 0 && selectedPreprints.length === 0) {
                 showToast('请选择内容', 'warning');
                 return;
             }
@@ -1205,6 +1361,7 @@
                     articles: selectedArticles,
                     github_repos: selectedRepos,
                     stocks: selectedStocks,
+                    preprints: selectedPreprints,
                     language: document.getElementById('outputLang').value,
                 })
             }).then(response => {
@@ -1515,6 +1672,7 @@
             selectedArticles = [];
             selectedRepos = [];
             selectedStocks = [];
+            selectedPreprints = [];
             currentBriefing = '';
             document.getElementById('briefingOutput').innerHTML = '<div style="color: var(--text-secondary); text-align: center; padding: 60px;"><div style="font-size: 48px; margin-bottom: 16px;">📝</div>点击"生成简报"开始</div>';
             document.getElementById('ttsContent').value = '';

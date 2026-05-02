@@ -16,6 +16,8 @@ logger = logging.getLogger(__name__)
 CATEGORY_TAGS = frozenset([
     "politics", "economy", "technology", "science",
     "health", "environment", "culture", "sports",
+    "ai", "machine_learning", "cs", "math", "physics",
+    "biology", "medicine", "genomics", "neuroscience",
 ])
 
 
@@ -64,6 +66,50 @@ class NewsSource:
 # ---------------------------------------------------------------------------
 
 SOURCE_REGISTRY: dict[str, list[NewsSource]] = {
+    # ---- Preprint Servers ----
+    "preprint": [
+        NewsSource("arXiv", "en", "https://arxiv.org",
+                   SourceType.RSS, ["ai", "machine_learning", "cs", "math", "physics"],
+                   rss_url="https://arxiv.org/rss/cs.AI",
+                   fetcher_hint="requests"),
+        NewsSource("arXiv-CS", "en", "https://arxiv.org/list/cs/recent",
+                   SourceType.RSS, ["cs", "technology"],
+                   rss_url="https://arxiv.org/rss/cs",
+                   fetcher_hint="requests"),
+        NewsSource("arXiv-LG", "en", "https://arxiv.org/list/cs.LG/recent",
+                   SourceType.RSS, ["machine_learning", "ai"],
+                   rss_url="https://arxiv.org/rss/cs.LG",
+                   fetcher_hint="requests"),
+        NewsSource("arXiv-CL", "en", "https://arxiv.org/list/cs.CL/recent",
+                   SourceType.RSS, ["ai", "technology"],
+                   rss_url="https://arxiv.org/rss/cs.CL",
+                   fetcher_hint="requests"),
+        NewsSource("arXiv-CV", "en", "https://arxiv.org/list/cs.CV/recent",
+                   SourceType.RSS, ["ai", "technology"],
+                   rss_url="https://arxiv.org/rss/cs.CV",
+                   fetcher_hint="requests"),
+        NewsSource("arXiv-Math", "en", "https://arxiv.org/list/math/recent",
+                   SourceType.RSS, ["math", "science"],
+                   rss_url="https://arxiv.org/rss/math",
+                   fetcher_hint="requests"),
+        NewsSource("arXiv-q-bio", "en", "https://arxiv.org/list/q-bio/recent",
+                   SourceType.RSS, ["biology", "science"],
+                   rss_url="https://arxiv.org/rss/q-bio",
+                   fetcher_hint="requests"),
+        NewsSource("arXiv-Stat", "en", "https://arxiv.org/list/stat/recent",
+                   SourceType.RSS, ["math", "ai"],
+                   rss_url="https://arxiv.org/rss/stat",
+                   fetcher_hint="requests"),
+        NewsSource("bioRxiv", "en", "https://www.biorxiv.org",
+                   SourceType.RSS, ["biology", "genomics", "neuroscience"],
+                   rss_url="https://www.biorxiv.org/rss/new.xml",
+                   fetcher_hint="requests"),
+        NewsSource("medRxiv", "en", "https://www.medrxiv.org",
+                   SourceType.RSS, ["medicine", "health"],
+                   rss_url="https://www.medrxiv.org/rss/new.xml",
+                   fetcher_hint="requests"),
+    ],
+
     # ---- Chinese (zh) ----
     "zh": [
         NewsSource("新华网", "zh", "https://www.xinhuanet.com",
@@ -422,6 +468,11 @@ def get_rss_sources(language: str = None) -> list[NewsSource]:
 def get_web_sources(language: str = None) -> list[NewsSource]:
     """Get all web scraping sources."""
     return get_sources(language=language, source_type=SourceType.WEB)
+
+
+def get_preprint_sources(category: str = None) -> list[NewsSource]:
+    """Get all preprint server sources."""
+    return get_sources(language="preprint", category=category)
 
 
 # ---------------------------------------------------------------------------

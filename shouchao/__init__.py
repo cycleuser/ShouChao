@@ -4,9 +4,11 @@ ShouChao (手抄) - Web Information Retrieval Assistant
 Aggregates news from major media sites across 10 languages,
 converts to markdown, indexes into ChromaDB, and provides
 AI-powered briefings and analysis.
+
+Now includes preprint server support (arXiv, bioRxiv, medRxiv).
 """
 
-__version__ = "0.2.1"
+__version__ = "0.3.0"
 
 
 def __getattr__(name):
@@ -52,6 +54,19 @@ def __getattr__(name):
     if name == "summarize_and_speak":
         from shouchao.api import summarize_and_speak
         return summarize_and_speak
+    # Preprint functions
+    if name == "fetch_preprints":
+        from shouchao.api import fetch_preprints
+        return fetch_preprints
+    if name == "search_preprints":
+        from shouchao.api import search_preprints
+        return search_preprints
+    if name == "index_preprints":
+        from shouchao.api import index_preprints
+        return index_preprints
+    if name == "get_preprint_categories":
+        from shouchao.api import get_preprint_categories
+        return get_preprint_categories
     raise AttributeError(f"module 'shouchao' has no attribute {name!r}")
 
 
@@ -71,4 +86,9 @@ __all__ = [
     "summarize_content",
     "get_tts_voices",
     "summarize_and_speak",
+    # Preprint functions
+    "fetch_preprints",
+    "search_preprints",
+    "index_preprints",
+    "get_preprint_categories",
 ]

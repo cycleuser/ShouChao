@@ -241,11 +241,12 @@ def create_app():
 
     @app.route("/api/briefing/from-articles", methods=["POST"])
     def api_briefing_from_articles():
-        """Generate briefing from selected articles, GitHub repos, and stocks."""
+        """Generate briefing from selected articles, GitHub repos, stocks, and preprints."""
         data = request.get_json(silent=True) or {}
         article_paths = data.get("articles", [])
         github_repos = data.get("github_repos", [])
         stocks = data.get("stocks", [])
+        preprint_paths = data.get("preprints", [])
         language = data.get("language", "zh")
         show_source = data.get("show_source", True)
         title = data.get("title")
@@ -273,6 +274,50 @@ def create_app():
                     )
                     for chunk in chunks:
                         yield _sse_data({"content": chunk})
+
+                # Generate preprint section
+                if preprint_paths:
+                    yield _sse_data({"content": "\n\n---\n\n## 📄 最新预印本论文\n\n"})
+                    for pp_path in preprint_paths[:10]:
+                        try:
+                            from pathlib import Path
+                            if Path(pp_path).exists():
+                                content = Path(pp_path).read_text(encoding="utf-8")
+                                # Extract title from front matter
+                                title_line = ""
+                                abstract = ""
+                                url = ""
+                                if content.startswith("---"):
+                                    end = content.find("---", 3)
+                                    if end > 0:
+                                        fm = content[3:end]
+                                        for line in fm.split("\n"):
+                                            if line.startswith("title:"):
+                                                title_line = line.split(":", 1)[1].strip().strip('"')
+                                            elif line.startswith("url:"):
+                                                url = line.split(":", 1)[1].strip().strip('"')
+                                
+                                # Extract abstract
+                                abs_marker = content.find("## Abstract")
+                                if abs_marker > 0:
+                                    abstract = content[abs_marker + 11:].strip()[:200]
+                                    for marker in ("[PDF]", "[Source]"):
+                                        idx = abstract.find(marker)
+                                        if idx > 0:
+                                            abstract = abstract[:idx].strip()
+
+                                if title_line:
+                                    display_title = title_line
+                                    if url:
+                                        yield _sse_data({"content": f"### [{display_title}]({url})\n\n"})
+                                    else:
+                                        yield _sse_data({"content": f"### {display_title}\n\n"})
+                                    
+                                    if abstract:
+                                        yield _sse_data({"content": f"{abstract}...\n\n"})
+                                    yield _sse_data({"content": "---\n\n"})
+                        except Exception as e:
+                            logger.warning(f"Failed to load preprint {pp_path}: {e}")
 
                 # Generate GitHub section with analysis and links
                 if github_repos:
@@ -864,6 +909,166 @@ def create_app():
         
         from flask import send_file
         return send_file(audio_path, mimetype="audio/mpeg")
+
+    # ---- Preprint API endpoints ----
+
+    @app.route("/api/preprint/fetch", methods=["POST"])
+    def api_preprint_fetch():
+        """Fetch preprints from arXiv, bioRxiv, medRxiv."""
+        data = request.get_json(silent=True) or {}
+        servers = data.get("servers")
+        categories = data.get("categories")
+        keywords = data.get("keywords")
+        max_results = data.get("max_results", 100)
+        date_from = data.get("date_from")
+        date_to = data.get("date_to")
+
+        from shouchao.api import fetch_preprints
+        result = fetch_preprints(
+            servers=servers,
+            categories=categories,
+            keywords=keywords,
+            max_results=max_results,
+            date_from=date_from,
+            date_to=date_to,
+        )
+        return jsonify(result.to_dict())
+
+    @app.route("/api/preprint/search", methods=["POST"])
+    def api_preprint_search():
+        """Search preprints with keyword/semantic/model modes."""
+        data = request.get_json(silent=True) or {}
+        query = data.get("query", "")
+        mode = data.get("mode", "keyword")
+        top_k = data.get("top_k", 10)
+        date_from = data.get("date_from")
+        date_to = data.get("date_to")
+
+        from shouchao.api import search_preprints
+        result = search_preprints(
+            query=query,
+            mode=mode,
+            top_k=top_k,
+            date_from=date_from,
+            date_to=date_to,
+        )
+        return jsonify(result.to_dict())
+
+    @app.route("/api/preprint/categories", methods=["GET"])
+    def api_preprint_categories():
+        """Get available preprint categories."""
+        server = request.args.get("server")
+
+        from shouchao.api import get_preprint_categories
+        result = get_preprint_categories(server=server)
+        return jsonify(result.to_dict())
+
+    @app.route("/api/preprint/index", methods=["POST"])
+    def api_preprint_index():
+        """Index preprints into knowledge base."""
+        data = request.get_json(silent=True) or {}
+        collection = data.get("collection", "preprints")
+
+        from shouchao.api import index_preprints
+        result = index_preprints(collection=collection)
+        return jsonify(result.to_dict())
+
+    @app.route("/api/preprint/list")
+    def api_preprint_list():
+        """List stored preprint articles."""
+        date_from = request.args.get("date_from")
+        date_to = request.args.get("date_to")
+        source = request.args.get("source")
+        page = int(request.args.get("page", 1))
+        per_page = int(request.args.get("per_page", 50))
+
+        from shouchao.core.storage import ArticleStorage
+        storage = ArticleStorage()
+        articles = storage.list_articles(
+            website=source,
+            date_from=date_from,
+            date_to=date_to,
+        )
+
+        # Filter to preprint sources
+        preprint_sources = {"arxiv", "biorxiv", "medrxiv"}
+        articles = [a for a in articles if a.get("website", "").lower() in preprint_sources]
+
+        total = len(articles)
+        start = (page - 1) * per_page
+        return jsonify({
+            "articles": articles[start:start + per_page],
+            "total": total,
+            "page": page,
+            "pages": (total + per_page - 1) // per_page,
+        })
+
+    @app.route("/api/preprint/article")
+    def api_preprint_article():
+        """Get a preprint article content."""
+        path = request.args.get("path", "")
+        if not path or not Path(path).exists():
+            return jsonify({"error": "Article not found"}), 404
+        content = Path(path).read_text(encoding="utf-8")
+        return jsonify({"content": content, "path": path})
+
+    # ---- Schedule API endpoints ----
+
+    @app.route("/api/schedule/enable", methods=["POST"])
+    def api_schedule_enable():
+        """Enable automatic preprint fetching."""
+        data = request.get_json(silent=True) or {}
+        time = data.get("time", "06:00")
+        servers = data.get("servers")
+        categories = data.get("categories")
+        keywords = data.get("keywords")
+        max_results = data.get("max_results", 200)
+        auto_index = data.get("auto_index", True)
+
+        from shouchao.core.scheduler import enable_scheduler
+        enable_scheduler(
+            time=time,
+            servers=servers,
+            categories=categories,
+            keywords=keywords,
+            max_results=max_results,
+            auto_index=auto_index,
+        )
+        return jsonify({"success": True, "message": f"Scheduler enabled at {time}"})
+
+    @app.route("/api/schedule/disable", methods=["POST"])
+    def api_schedule_disable():
+        """Disable automatic preprint fetching."""
+        from shouchao.core.scheduler import disable_scheduler
+        disable_scheduler()
+        return jsonify({"success": True, "message": "Scheduler disabled"})
+
+    @app.route("/api/schedule/status", methods=["GET"])
+    def api_schedule_status():
+        """Get scheduler status."""
+        from shouchao.core.scheduler import get_scheduler_status
+        status = get_scheduler_status()
+        return jsonify(status)
+
+    @app.route("/api/schedule/run", methods=["POST"])
+    def api_schedule_run():
+        """Run manual preprint fetch."""
+        data = request.get_json(silent=True) or {}
+        servers = data.get("servers")
+        categories = data.get("categories")
+        keywords = data.get("keywords")
+        max_results = data.get("max_results", 200)
+        auto_index = data.get("auto_index", True)
+
+        from shouchao.core.scheduler import run_manual_fetch
+        result = run_manual_fetch(
+            servers=servers,
+            categories=categories,
+            keywords=keywords,
+            max_results=max_results,
+            auto_index=auto_index,
+        )
+        return jsonify({"success": True, "result": result})
 
     return app
 
