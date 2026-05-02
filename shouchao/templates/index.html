@@ -736,13 +736,15 @@
                             <div class="form-group">
                                 <label class="form-label">学科类别</label>
                                 <select id="preprintCategory" class="form-select">
-                                    <option value="cs.AI,cs.LG,cs.CL">AI / ML / NLP</option>
+                                    <option value="">🔍 关键词搜索（输入上方关键词）</option>
+                                    <option value="cs.AI,cs.LG,cs.CL" selected>AI / ML / NLP</option>
                                     <option value="cs.CV">计算机视觉</option>
                                     <option value="q-bio.GN,q-bio.BM">基因组学 / 生物分子</option>
                                     <option value="math.ST,math.OC">统计 / 优化</option>
                                     <option value="stat.ML">统计机器学习</option>
                                     <option value="physics.data-an">数据分析</option>
                                 </select>
+                                <small style="color: var(--text-secondary); font-size: 11px;">切换平台后自动加载对应学科目录</small>
                             </div>
                             <div class="form-group">
                                 <label class="form-label">关键词过滤（可选）</label>
@@ -1025,12 +1027,14 @@
         let currentBriefing = '';
         let currentAudioPath = '';
         let modelConnected = false;
+        let preprintCategoriesCache = {};
 
         // 初始化
         document.addEventListener('DOMContentLoaded', function() {
             loadModels();
             loadTtsEngines();
             checkModelStatus();
+            loadPreprintCategories();
             
             // 预选中文和英文
             document.querySelectorAll('#newsLangGrid .lang-item').forEach(item => {
@@ -1039,6 +1043,56 @@
                 }
             });
         });
+
+        // 加载预印本分类
+        async function loadPreprintCategories() {
+            const server = selectedPreprintServers[0] || 'arxiv';
+            try {
+                const res = await fetch('/api/preprint/categories?server=' + server);
+                const data = await res.json();
+                if (data.success && data.data?.categories?.[server]) {
+                    preprintCategoriesCache[server] = data.data.categories[server];
+                } else {
+                    preprintCategoriesCache[server] = [];
+                }
+            } catch (e) {
+                console.error('Failed to load preprint categories:', e);
+                preprintCategoriesCache[server] = [];
+            }
+            renderPreprintCategorySelect();
+        }
+
+        function renderPreprintCategorySelect() {
+            const server = selectedPreprintServers[0] || 'arxiv';
+            const categories = preprintCategoriesCache[server] || [];
+            const select = document.getElementById('preprintCategory');
+
+            // 保留关键词选项
+            let optionsHtml = '<option value="">🔍 关键词搜索（输入上方关键词）</option>';
+
+            // Helper to add a category option
+            const addOption = (cat) => {
+                const id = cat.id || cat;
+                const name = cat.name || cat;
+                const fullName = cat.full_name || name;
+                // Skip top-level group nodes (no dot in id) - they're not actual categories
+                if (typeof id === 'string' && !id.includes('.')) return;
+                optionsHtml += `<option value="${id}">${fullName}</option>`;
+            };
+
+            if (Array.isArray(categories) && categories.length > 0) {
+                categories.forEach(cat => {
+                    // If cat has children, iterate over them; otherwise use cat directly
+                    if (cat.children && cat.children.length > 0) {
+                        cat.children.forEach(addOption);
+                    } else {
+                        addOption(cat);
+                    }
+                });
+            }
+
+            select.innerHTML = optionsHtml;
+        }
 
         // 步骤导航
         function goToStep(step) {
@@ -1080,12 +1134,16 @@
             event.stopPropagation();
             const server = el.dataset.server;
             if (selectedPreprintServers.includes(server)) {
-                selectedPreprintServers = selectedPreprintServers.filter(s => s !== server);
-                el.classList.remove('selected');
+                if (selectedPreprintServers.length > 1) {
+                    selectedPreprintServers = selectedPreprintServers.filter(s => s !== server);
+                    el.classList.remove('selected');
+                }
             } else {
                 selectedPreprintServers.push(server);
                 el.classList.add('selected');
             }
+            // Reload categories for the new primary server
+            loadPreprintCategories();
         }
 
         function updateSourceStats() {
@@ -1133,12 +1191,46 @@
 
         async function fetchNews() {
             try {
-                const res = await fetch('/api/news/list?language=' + selectedNewsLangs[0] + '&per_page=50');
-                const data = await res.json();
-                newsArticles = data.articles || [];
+                // Use search mode to fetch latest news
+                const res = await fetch('/api/news/fetch', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        language: selectedNewsLangs[0] || 'en',
+                        max_articles: parseInt(document.getElementById('maxArticles').value) || 20,
+                        mode: 'search',  // Use search mode for latest news
+                    })
+                });
+                
+                // Parse SSE response
+                const reader = res.body.getReader();
+                const decoder = new TextDecoder();
+                let articles = [];
+                
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    
+                    const text = decoder.decode(value);
+                    const lines = text.split('\n');
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            try {
+                                const data = JSON.parse(line.slice(6));
+                                if (data.status === 'complete') {
+                                    articles = data.articles || [];
+                                } else if (data.status === 'error') {
+                                    throw new Error(data.error);
+                                }
+                            } catch (e) {}
+                        }
+                    }
+                }
+                
+                newsArticles = articles;
                 selectedArticles = newsArticles.slice(0, 10).map(a => a.path);
                 renderNewsList();
-                showToast(`获取 ${newsArticles.length} 篇新闻`, 'success');
+                showToast(`获取 ${newsArticles.length} 篇最新新闻`, 'success');
             } catch (e) {
                 showToast('新闻抓取失败: ' + e.message, 'error');
             }
@@ -1177,9 +1269,16 @@
         async function fetchPreprints() {
             try {
                 const servers = selectedPreprintServers;
-                const categories = document.getElementById('preprintCategory').value.split(',');
+                const categoryValue = document.getElementById('preprintCategory').value;
+                // 如果选了空选项且有关键词，则不用分类；否则按分类
                 const keywordsStr = document.getElementById('preprintKeywords').value.trim();
                 const keywords = keywordsStr ? keywordsStr.split(',').map(k => k.trim()) : null;
+
+                let categories = null;
+                if (categoryValue && categoryValue !== '') {
+                    categories = categoryValue.split(',');
+                }
+                // 如果没有选分类但有关键词，bioRxiv/medRxiv 可以直接用关键词搜索
                 const maxResults = parseInt(document.getElementById('preprintMaxResults').value) || 50;
 
                 const res = await fetch('/api/preprint/fetch', {

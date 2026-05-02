@@ -104,6 +104,35 @@ class BaseSearchEngine(ABC):
 class DuckDuckGoEngine(BaseSearchEngine):
     """DuckDuckGo search engine (no API key required)."""
 
+    def __init__(self, proxy: Optional[str] = None):
+        self._proxy = proxy
+        self._old_proxy = None
+
+    def _apply_proxy(self):
+        """Apply proxy via environment variables for ddgs."""
+        if self._proxy:
+            import os
+            self._old_proxy = {
+                "http": os.environ.get("http_proxy"),
+                "https": os.environ.get("https_proxy"),
+                "HTTP_PROXY": os.environ.get("HTTP_PROXY"),
+                "HTTPS_PROXY": os.environ.get("HTTPS_PROXY"),
+            }
+            os.environ["http_proxy"] = self._proxy
+            os.environ["https_proxy"] = self._proxy
+            os.environ["HTTP_PROXY"] = self._proxy
+            os.environ["HTTPS_PROXY"] = self._proxy
+
+    def _restore_proxy(self):
+        """Restore previous proxy settings."""
+        if self._proxy and self._old_proxy:
+            import os
+            for key, val in self._old_proxy.items():
+                if val is None:
+                    os.environ.pop(key, None)
+                else:
+                    os.environ[key] = val
+
     @property
     def name(self) -> str:
         return "duckduckgo"
@@ -116,25 +145,31 @@ class DuckDuckGoEngine(BaseSearchEngine):
         date_range: Optional[str] = None,
     ) -> SearchResponse:
         try:
-            from duckduckgo_search import DDGS
+            from ddgs import DDGS
         except ImportError:
-            return SearchResponse(
-                query=query,
-                results=[],
-                engine=self.name,
-                error="duckduckgo-search not installed. Run: pip install duckduckgo-search",
-            )
+            try:
+                from duckduckgo_search import DDGS
+            except ImportError:
+                return SearchResponse(
+                    query=query,
+                    results=[],
+                    engine=self.name,
+                    error="ddgs not installed. Run: pip install ddgs",
+                )
 
         try:
             results = []
-            with DDGS() as ddgs:
-                search_kwargs = {"keywords": query, "max_results": num_results}
+
+            self._apply_proxy()
+            try:
+                ddgs = DDGS()
+                search_kwargs = {"max_results": num_results}
                 if language:
                     search_kwargs["region"] = language
                 if date_range:
                     search_kwargs["timelimit"] = date_range
 
-                for r in ddgs.text(**search_kwargs):
+                for r in ddgs.text(query, **search_kwargs):
                     results.append(SearchResult(
                         title=r.get("title", ""),
                         url=r.get("href", ""),
@@ -142,6 +177,9 @@ class DuckDuckGoEngine(BaseSearchEngine):
                         source=self._extract_domain(r.get("href", "")),
                         rank=len(results) + 1,
                     ))
+                ddgs.close() if hasattr(ddgs, 'close') else None
+            finally:
+                self._restore_proxy()
 
             return SearchResponse(
                 query=query,
@@ -488,7 +526,7 @@ class WebSearchEngine:
                 searxng_url or os.environ.get("SEARXNG_URL", "https://searx.be")
             )
 
-        self._engines["duckduckgo"] = DuckDuckGoEngine()
+        self._engines["duckduckgo"] = DuckDuckGoEngine(proxy=proxy)
 
         self._proxy = proxy
 

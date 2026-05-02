@@ -151,6 +151,8 @@ def create_app():
         source = data.get("source")
         max_articles = data.get("max_articles", 20)
         fetcher = data.get("fetcher", "requests")
+        mode = data.get("mode", "auto")
+        categories = data.get("categories")
 
         def generate():
             yield _sse_data({"status": "started"})
@@ -159,6 +161,7 @@ def create_app():
                 result = fetch_news(
                     language=language, source=source,
                     max_articles=max_articles, fetcher=fetcher,
+                    mode=mode, categories=categories,
                 )
                 if result.success:
                     articles = result.data.get("articles", [])
@@ -166,6 +169,7 @@ def create_app():
                         "status": "complete",
                         "fetched": len(articles),
                         "articles": articles,
+                        "mode": result.data.get("mode", "rss"),
                     })
                 else:
                     yield _sse_data({"status": "error", "error": result.error})

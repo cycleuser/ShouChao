@@ -184,6 +184,9 @@ def cmd_fetch():
                         help="Max articles per source (default: 20)")
     parser.add_argument("--fetcher", default="requests",
                         choices=["requests", "curl", "browser", "playwright"])
+    parser.add_argument("--mode", default="auto",
+                        choices=["auto", "search", "rss"],
+                        help="Fetch mode: auto=use search if no source, search=web search, rss=RSS feeds")
     args = parser.parse_args()
     _apply_data_dir(args)
     _setup_logging(args.verbose, args.quiet)
@@ -199,6 +202,7 @@ def cmd_fetch():
         has_rich = False
 
     languages = args.language.split(",") if args.language else [None]
+    categories = args.category.split(",") if args.category else None
 
     all_results = []
     for lang in languages:
@@ -207,6 +211,8 @@ def cmd_fetch():
             source=args.source,
             max_articles=args.max_articles,
             fetcher=args.fetcher,
+            mode=args.mode,
+            categories=categories,
         )
         if result.success and result.data:
             all_results.extend(result.data.get("articles", []))

@@ -455,8 +455,10 @@ def fetch_news(
     max_articles: int = 50,
     fetcher: str = "requests",
     force_refresh: bool = False,
+    mode: str = "auto",
+    categories: Optional[list[str]] = None,
 ) -> ToolResult:
-    """Fetch news articles from configured sources.
+    """Fetch news articles from configured sources or web search.
 
     Args:
         language: Filter by language code (e.g. "en", "zh"). None = all.
@@ -464,6 +466,8 @@ def fetch_news(
         max_articles: Maximum articles to fetch per source.
         fetcher: Fetcher backend ("requests", "curl", "browser", "playwright").
         force_refresh: Ignore dedup and fetch all (for fresh content).
+        mode: Fetch mode ("auto", "search", "rss"). "search" uses web search.
+        categories: Categories for search mode.
 
     Returns:
         ToolResult with data={"fetched": N, "articles": [...]}.
@@ -471,16 +475,41 @@ def fetch_news(
     try:
         from shouchao import __version__
         from shouchao.core.config import CONFIG, load_config, get_proxies, ensure_dirs
+
+        load_config()
+        ensure_dirs()
+        proxy = get_proxies()
+
+        # Use search-based fetching if requested
+        if mode == "search" or (mode == "auto" and not source):
+            from shouchao.core.search_fetcher import fetch_news_by_search
+
+            target_lang = language or CONFIG.language
+            result = fetch_news_by_search(
+                language=target_lang,
+                categories=categories,
+                max_articles=max_articles,
+                date_range="d",
+                proxy=proxy,
+            )
+            return ToolResult(
+                success=True,
+                data={
+                    "fetched": result["count"],
+                    "articles": result["articles"],
+                    "stats": result["stats"],
+                    "mode": "search",
+                },
+                metadata={"version": __version__},
+            )
+
+        # Original RSS/web scraping mode
         from shouchao.core.sources import get_sources, SourceType
         from shouchao.core.fetcher import create_fetcher, RateLimiter
         from shouchao.core.rss import fetch_feed
         from shouchao.core.converter import html_to_markdown
         from shouchao.core.storage import ArticleStorage
 
-        load_config()
-        ensure_dirs()
-
-        proxy = get_proxies()
         proxy_str = proxy.get("https") if proxy else None
 
         storage = ArticleStorage()
@@ -1189,32 +1218,54 @@ def index_preprints(
 def get_preprint_categories(
     *,
     server: Optional[str] = None,
+    query: Optional[str] = None,
+    flat: bool = False,
 ) -> ToolResult:
     """Get available preprint categories.
 
     Args:
         server: Filter by server ("arxiv", "biorxiv", "medrxiv"). None = all.
+        query: Search categories by keyword. If provided, returns matching categories.
+        flat: Return flat list instead of hierarchy (only when query is not provided).
 
     Returns:
         ToolResult with category lists.
     """
     try:
         from shouchao import __version__
-        from shouchao.core.preprint import (
-            ARXIV_CATEGORIES, BIORXIV_CATEGORIES, MEDRXIV_CATEGORIES,
+        from shouchao.core.preprint_categories import (
+            get_all_categories,
+            search_categories,
         )
 
-        result = {}
-        if server is None or server == "arxiv":
-            result["arxiv"] = ARXIV_CATEGORIES
-        if server is None or server == "biorxiv":
-            result["biorxiv"] = BIORXIV_CATEGORIES
-        if server is None or server == "medrxiv":
-            result["medrxiv"] = MEDRXIV_CATEGORIES
+        # If query provided, search categories
+        if query:
+            results = search_categories(
+                query=query,
+                server=server,
+                top_k=50,
+            )
+            return ToolResult(
+                success=True,
+                data={
+                    "query": query,
+                    "results": results,
+                    "count": len(results),
+                    "mode": "search",
+                },
+                metadata={"version": __version__},
+            )
+
+        # Otherwise return all categories
+        categories = get_all_categories(server=server, flat=flat)
 
         return ToolResult(
             success=True,
-            data={"categories": result},
+            data={
+                "categories": categories,
+                "mode": "browse",
+                "flat": flat,
+            },
             metadata={"version": __version__},
         )
     except Exception as e:
