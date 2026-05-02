@@ -8,7 +8,7 @@ AI-powered briefings and analysis.
 Now includes preprint server support (arXiv, bioRxiv, medRxiv).
 """
 
-__version__ = "0.3.0"
+__version__ = "0.3.1"
 
 
 def __getattr__(name):
